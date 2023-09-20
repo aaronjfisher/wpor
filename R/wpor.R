@@ -13,21 +13,32 @@ crossfit <- function(wf, rset) {
     rename(.fold_id = id)
 }
 
-#' Apply weighted pseudo-outcome regression
-#' @export
-wpor <- function(dat, # contains columns outcome; treatment
-                 outcome_wf, treatment_wf, effect_wf, # workflows for each modeling step
-                 pseudo_fun = pseudo_DR,
-                 weight_fun = weight_1,
-                 min_prob = 0.01, # truncation for propensity scores
-                 v, # number of folds, passed to vfold_cv
-                 cf_order = 2,
-                 verbose = TRUE) {
-  stopifnot(is.factor(dat$treatment))
-  stopifnot(all(dat$treatment %in% 0:1))
+check_dat <- function(dat) {
   stopifnot(!any(c(".weights", "pseudo", ".row") %in% names(dat)))
   dat <- mutate(dat, .row = 1:nrow(dat)) %>%
     relocate(.row, .before = everything())
+  dat
+}
+
+#' Apply weighted pseudo-outcome regression
+#' @param dat a data.frame or tibble containing columns `treatment` and `outcome`.
+#' @param outcome_wf,treatment_wf tidmodel workflows for each modeling step. These should have formulas with
+#' `outcome` and `treatment` on the left-hand side, respectively.
+#' @param min_prob a truncation probability for the propensity scores.
+#' @param v number of folds, passed to vfold_cv
+#' @param cf_order either 2, 3, or 4.
+#' @param verbose whether to print progress.
+#' @returns a tibble of nuisance predictions. If cf_order is >2, there will be more than 1 prediction per row of `dat`. The tibble contains: `.row`, the row index of `dat`; `.fold_id`, the fold used to train the predictions; `.pred_treatment`, the predicted probability of treatment; `.pred_control`, the predicted probability of control (equal to 1-.pred_treatment if cf_order <= 3); `.pred_outcome_0` the predicted outcome under treatment == 0, `.pred_outcome_1` the predicted outcome under treatment == 1; `.pred_outcome_obs` the predicted outcome under the observed treatment, i.e., marginalizing over treatment.
+#' @export
+crossfit_nuisance <- function(dat,
+                              outcome_wf, treatment_wf,
+                              min_prob = 0.01,
+                              v,
+                              cf_order = 2,
+                              verbose = TRUE) {
+  stopifnot(is.factor(dat$treatment))
+  stopifnot(all(dat$treatment %in% 0:1))
+  dat <- check_dat(dat)
 
   if (cf_order == 2) {
     folds_all <- vfold_cv(dat, v) # contains full data
@@ -53,9 +64,9 @@ wpor <- function(dat, # contains columns outcome; treatment
   E_outcome_obs <- crossfit(outcome_wf, folds_all) %>%
     rename(.pred_outcome_obs = .pred) %>%
     select(.row, .fold_id, .pred_outcome_obs)
-  ## !! decide to compute this adaptively??
+  ## !! decide whether to compute this adaptively??
 
-  if (verbose) message("Reshaping pseudo outcomes")
+  if (verbose) message("Reshaping nuisance predictions")
   pred_df <- merge(E_outcome_0_tbl, E_outcome_1_tbl) %>%
     merge(E_outcome_obs) %>%
     merge(E_treatment_tbl) %>%
@@ -108,28 +119,57 @@ wpor <- function(dat, # contains columns outcome; treatment
     })
   }
 
-  pseudo_tbl <- dat %>%
+  nuisance_tbl <- dat %>%
     select(.row, outcome, treatment) %>%
     left_join(pred_df2, by = join_by(.row)) %>%
     unnest(.pred)
-  pseudo_tbl$pseudo <- pseudo_tbl %>%
+
+  nuisance_tbl
+}
+
+#' Fit a weighted pseudo-outcome regression
+#' @param nuisance_tbl the output of crossfit_nuisance
+#' @param ... passed to crossfit_nuisance, if nuisance_tbl is not
+#' supplied.
+#' @param pseudo_fun the pseudo-outcome function. See pseudo_fun.R
+#' @param weight_fun the weighting function. See weight_fun.R#'
+#' @param effect_wf A workflow for fitting the final effect (pseudo-outcome) model.
+#' @returns a fitted model; the output of `workflows:::fit.workflow`
+#' @rdname crossfit_nuisance
+#' @export
+fit_wpor <- function(dat,
+                     nuisance_tbl = NULL,
+                     ...,
+                     pseudo_fun, weight_fun, effect_wf,
+                     verbose = TRUE) {
+  if (is.null(nuisance_tbl)) {
+    nuisance_tbl <- crossfit_nuisance(
+      dat = dat,
+      verbose = verbose,
+      ...
+    )
+  }
+  dat <- check_dat(dat)
+
+  stopifnot(!any(c(".weights", "pseudo") %in% names(nuisance_tbl)))
+  stopifnot(all(c(".row") %in% names(nuisance_tbl)))
+
+  nuisance_tbl$pseudo <- nuisance_tbl %>%
     select(formalArgs(pseudo_fun)) %>%
     do.call(pseudo_fun, .)
-  wts <- pseudo_tbl %>%
+  wts <- nuisance_tbl %>%
     select(formalArgs(weight_fun)) %>%
     do.call(weight_fun, .)
   wts <- wts / mean(wts)
-  pseudo_tbl$.weights <- hardhat::importance_weights(wts)
-
+  nuisance_tbl$.weights <- hardhat::importance_weights(wts)
 
   if (verbose) message("Fitting effect model")
   dat_effect <- left_join(
-    pseudo_tbl[, c(".row", "pseudo", ".weights")],
+    nuisance_tbl[, c(".row", "pseudo", ".weights")],
     dat,
     by = join_by(.row)
   ) %>%
     select(-outcome, -treatment)
-
 
   fitted <- effect_wf %>%
     workflows::add_case_weights(.weights) %>%
