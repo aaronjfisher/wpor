@@ -10,7 +10,7 @@ devtools::document()
 system.time({
 	no_errors <- FALSE
 	devtools::run_examples()
-	devtools::test()
+	#devtools::test()
 	devtools::build_vignettes()
 	no_errors <- TRUE
 })
@@ -23,3 +23,17 @@ lintr::lint_dir()
 system.time({devtools::check(vignettes = TRUE)})
 ```
 
+
+## Scratch
+
+Some other helpful debugging shortcuts, stored here for convenience:
+```r
+rm(list=ls())
+unloadNamespace('wpor')
+devtools::load_all()
+
+devtools::install(build_vignettes = TRUE)
+browseVignettes('wpor')
+help(package='wpor')
+devtools::build()
+```
