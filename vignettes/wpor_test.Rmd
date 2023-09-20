@@ -1,0 +1,94 @@
+---
+title: "Testing WPOR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Testing WPOR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+## Simulate data
+
+```{r simulate_data}
+library("wpor")
+library("dplyr")
+library("tidymodels")
+
+set.seed(456)
+dat_list <- sim_data(
+  setup = 'B', 
+  n = 500, 
+  p = 6, 
+  sigma = .1)
+dat <- data.frame(
+	outcome = dat_list$y,
+	treatment = as.factor(dat_list$a),
+	x = dat_list$x,
+	tau = dat_list$tau)
+
+```
+
+## Define workflows for each nuisance model
+```{r define_workflows}
+rf_mod <- 
+  rand_forest(trees = 100) %>% 
+  set_engine("ranger") 
+
+rhs <- paste(paste0('x.', 1:6), collapse = ' + ')
+treatment_formula <- formula(paste('treatment ~', rhs))
+outcome_formula <- formula(paste('outcome ~', rhs))
+pseudo_formula <- formula(paste('pseudo ~', rhs))
+
+treatment_wf <- workflow() %>%
+  add_model(set_mode(rf_mod, "classification")) %>%
+  add_formula(treatment_formula) 
+outcome_wf <- workflow() %>%
+  add_model(set_mode(rf_mod, "regression")) %>%
+  add_formula(outcome_formula)
+effect_wf <- workflow() %>%
+  add_model(set_mode(rf_mod, "regression")) %>%
+  add_formula(pseudo_formula)
+
+```
+
+## Fit weighted pseudo-outcome regression
+
+```{r fit_wpor}
+fitted <- wpor(
+		dat,
+		outcome_wf = outcome_wf, 
+		treatment_wf = treatment_wf, 
+		effect_wf = effect_wf,
+		#pseudo_fun = pseudo_DR,
+		#pseudo_fun = pseudo_cov,
+		pseudo_fun = pseudo_U,
+		#weight_fun = weight_DR_X,
+		#weight_fun = weight_DR_AX,
+		#weight_fun = weight_1,
+		weight_fun = weight_U_AX,
+		#weight_fun = weight_U_X,
+		min_prob = 0.01,
+		v = 10,
+		cf_order = 2
+	)
+
+## MSE
+mean((predict(fitted, dat)$.pred - dat_list$tau)^2) / var(dat_list$tau)
+```
+
+```{r workspace, include=FALSE, eval=FALSE}
+mu1hat <- outcome_wf %>% 
+	fit(filter(dat, treatment == 1))
+mu0hat <- outcome_wf %>% 
+	fit(filter(dat, treatment == 0))
+plugin_hat <- 
+	predict(mu1hat, dat)$.pred - 
+	predict(mu0hat, dat)$.pred
+mean((plugin_hat - dat_list$tau)^2) / var(dat_list$tau)
+```
