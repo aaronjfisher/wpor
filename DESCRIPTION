@@ -16,6 +16,7 @@ Imports:
 VignetteBuilder: knitr
 Suggests: 
   parsnip,
+  ranger,
   testthat (>= 3.0.0),
   tidymodels
 Config/testthat/edition: 3
