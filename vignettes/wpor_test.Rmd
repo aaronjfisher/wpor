@@ -21,7 +21,11 @@ library("dplyr")
 library("tidymodels")
 
 set.seed(456)
-p <- 6; n_train <- 500; n_test <- 5000; sigma = 1; setup = "B"
+p <- 6
+n_train <- 500
+n_test <- 20000
+sigma <- 1
+setup <- "B"
 train_data <- sim_data(
   setup = setup, n = n_train, p = p, sigma = sigma
 )$data
@@ -34,16 +38,17 @@ test_data <- test_list$data
 
 ## Define workflows for each nuisance model
 ```{r define_workflows}
-
-
 cn <- colnames(train_data)
-x_terms <- cn[starts_with('x.', vars = cn)]
+x_terms <- cn[starts_with("x.", vars = cn)]
 rhs <- paste(x_terms, collapse = " + ")
 
 treatment_formula <- formula(paste("treatment ~", rhs))
 outcome_formula <- formula(paste("outcome ~", rhs))
 effect_formula <- formula(paste("pseudo ~", rhs))
 
+rf_mod <-
+  rand_forest(trees = 100) %>%
+  set_engine("ranger")
 
 treatment_wf <- workflow() %>%
   add_model(set_mode(rf_mod, "classification")) %>%
@@ -53,7 +58,7 @@ outcome_wf <- workflow() %>%
   add_formula(outcome_formula)
 effect_wf <- workflow() %>%
   add_model(set_mode(rf_mod, "regression")) %>%
-  add_formula(pseudo_formula)
+  add_formula(effect_formula)
 
 treatment_wf
 outcome_wf
@@ -63,35 +68,28 @@ effect_wf
 ## Fit weighted pseudo-outcome regression
 
 ```{r fit_wpor}
-set.seed(0) #set seed to compare results
 fitted <- fit_wpor(
   data = train_data,
   outcome_wf = outcome_wf,
   treatment_wf = treatment_wf,
   effect_wf = effect_wf,
-  # pseudo_fun = pseudo_DR,
-  # pseudo_fun = pseudo_cov,
   pseudo_fun = pseudo_U,
-  # weight_fun = weight_DR_X,
-  # weight_fun = weight_DR_AX,
-  # weight_fun = weight_1,
   weight_fun = weight_U_AX,
-  # weight_fun = weight_U_X,
   min_prob = 0.01,
   v = 5,
   cf_order = 2
 )
 
 ## MSE
-true_test_effect <- test_list$params$tau
-wpor_pred <- predict(fitted, test_data)$.pred
-mean((wpor_pred - true_test_effect)^2)
+mean((
+  predict(fitted, test_data)$.pred
+    - test_list$params$tau
+)^2)
 ```
 
 Alternatively, the nuisance predictions can be pre-computed. This is helpful when comparing options for `pseudo_fun` and/or `weight_fun`.
 
 ```{r}
-set.seed(0)
 nuisance_tbl <- crossfit_nuisance(
   data = train_data,
   outcome_wf = outcome_wf,
@@ -105,18 +103,29 @@ fitted2 <- fit_wpor(
   data = train_data,
   nuisance_tbl = nuisance_tbl,
   effect_wf = effect_wf,
-  pseudo_fun = pseudo_U,
-  weight_fun = weight_U_AX,
+  pseudo_fun = pseudo_DR,
+  # pseudo_fun = pseudo_cov,
+  # pseudo_fun = pseudo_U,
+  # weight_fun = weight_DR_X,
+  weight_fun = weight_DR_AX,
+  # weight_fun = weight_1,
+  # weight_fun = weight_U_AX,
+  # weight_fun = weight_U_X,
 )
 
-mean((predict(fitted2, test_data)$.pred - true_test_effect)^2)
+mean((
+  predict(fitted2, test_data)$.pred
+    - test_list$params$tau
+)^2)
 ```
 
 # Two-Learner (T-Learner) approach
 
 ```{r workspace, include=FALSE, eval=FALSE}
-t_learner_fitted <- t_learner(train_data,  outcome_wf)
-mean(
-  (predict(t_learner_fitted, test_data)$.pred - true_test_effect)^2)
+t_learner_fitted <- t_learner(train_data, outcome_wf)
+mean((
+  predict(t_learner_fitted, test_data)$.pred
+    - test_list$params$tau
+)^2)
 ```
 

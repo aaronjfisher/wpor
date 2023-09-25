@@ -40,7 +40,7 @@ predict_prob <- function(object, ...) {
 
 
 #' Fit workflow or object on resampled folds
-#' @param object must have a fit method, which returns an object with a 
+#' @param object must have a fit method, which returns an object with a
 #' predict method; which returns a tibble with .pred or .pred_1 and .pred_0
 #' @param rset e.g., the output of vfold_cv
 #' This function is based on tune::fit_resamples, but it is not a generic.

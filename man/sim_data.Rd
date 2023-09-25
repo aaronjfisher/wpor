@@ -2,10 +2,12 @@
 % Please edit documentation in R/sim_data.R
 \name{sim_data}
 \alias{sim_data}
-\title{Simulate data based on various articles}
+\title{Simulate data based on Nie & Wager, 2018.
+See https://github.com/xnie/rlearner/blob/6806396960e672214e2ef36e16c76bbb58ef9114/experiments_for_paper/run_simu.R}
 \usage{
-sim_data(setup, n, p, sigma, add_splines)
+sim_data(setup, n, p, sigma)
 }
 \description{
-Simulate data based on various articles
+Simulate data based on Nie & Wager, 2018.
+See https://github.com/xnie/rlearner/blob/6806396960e672214e2ef36e16c76bbb58ef9114/experiments_for_paper/run_simu.R
 }

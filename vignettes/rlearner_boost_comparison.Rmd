@@ -21,7 +21,11 @@ library("dplyr")
 library("tidymodels")
 
 set.seed(456)
-p <- 6; n_train <- 500; n_test <- 5000; sigma = 1; setup = "B"
+p <- 6
+n_train <- 500
+n_test <- 20000
+sigma <- 1
+setup <- "B"
 train_data <- sim_data(
   setup = setup, n = n_train, p = p, sigma = sigma
 )$data
@@ -34,20 +38,17 @@ test_data <- test_list$data
 
 ## Define workflows for each nuisance model
 ```{r define_workflows}
-
-
-
 cn <- colnames(train_data)
-x_terms <- cn[starts_with('x.', vars = cn)]
+x_terms <- cn[starts_with("x.", vars = cn)]
 rhs <- paste(x_terms, collapse = " + ")
 
 treatment_formula <- formula(paste("treatment ~", rhs))
 outcome_formula <- formula(paste("outcome ~", rhs))
 effect_formula <- formula(paste("pseudo ~", rhs))
 
-treatment_wf <- cvboost_spec(treatment_formula, 'classification')
-outcome_wf <- cvboost_spec(outcome_formula, 'regression')
-effect_wf <- cvboost_spec(effect_formula, 'regression')}
+treatment_wf <- cvboost_spec(treatment_formula, "classification")
+outcome_wf <- cvboost_spec(outcome_formula, "regression")
+effect_wf <- cvboost_spec(effect_formula, "regression")
 
 treatment_wf
 outcome_wf
@@ -69,8 +70,14 @@ fitted <- fit_wpor(
   data = train_data,
   nuisance_tbl = nuisance_tbl,
   effect_wf = effect_wf,
+  # pseudo_fun = pseudo_DR,
+  # pseudo_fun = pseudo_cov,
   pseudo_fun = pseudo_U,
-  weight_fun = weight_U_AX,
+  # weight_fun = weight_DR_X
+  # weight_fun = weight_DR_AX
+  # weight_fun = weight_1
+  weight_fun = weight_U_AX
+  # weight_fun = weight_U_X
 )
 
 ## MSE
@@ -78,35 +85,37 @@ true_test_effect <- test_list$params$tau
 wpor_pred <- predict(fitted, test_data)$.pred
 mean((wpor_pred - true_test_effect)^2)
 cbind(wpor_pred, true_test_effect) %>%
-  plot
+  plot()
 
 
-new_data_formula <- formula(paste("~", rhs, '-1'))
+new_data_formula <- formula(paste("~", rhs, "-1"))
 train_x <- model.matrix(new_data_formula, train_data)
 test_x <- model.matrix(new_data_formula, test_data)
 train_y <- train_data$outcome
-train_w <- as.numeric(train_data$treatment ==1)
-rboost_out <- rlearner::rboost(x = train_x, y = train_y, w= train_w)
+train_w <- as.numeric(train_data$treatment == 1)
+rboost_out <- rlearner::rboost(x = train_x, y = train_y, w = train_w)
 pred_rboost <- predict(rboost_out, test_x)
 
 mean((pred_rboost - true_test_effect)^2)
 
 cbind(
   true_test_effect,
-  wpor_pred, 
+  wpor_pred,
   pred_rboost
-  ) %>%
-  tibble
-plot(wpor_pred, pred_rboost, asp=1)
+) %>%
+  tibble()
+plot(wpor_pred, pred_rboost, asp = 1)
 
 
 
 
-t_learner_fitted <- t_learner(train_data,  outcome_wf)
+t_learner_fitted <- t_learner(train_data, outcome_wf)
 mean(
-  (predict(t_learner_fitted, test_data)$.pred - true_test_effect)^2)
-tboost_out <- rlearner::tboost(x = train_x, y = train_y, w= train_w)
+  (predict(t_learner_fitted, test_data)$.pred - true_test_effect)^2
+)
+tboost_out <- rlearner::tboost(x = train_x, y = train_y, w = train_w)
 mean(
-  (predict(tboost_out, test_x) - true_test_effect)^2)
+  (predict(tboost_out, test_x) - true_test_effect)^2
+)
 ```
 

@@ -2,18 +2,21 @@
 % Please edit documentation in R/wpor.R
 \name{fit_on_folds}
 \alias{fit_on_folds}
-\title{Based on tune::fit_resamples, but it is not a generic.
+\title{Fit workflow or object on resampled folds}
+\usage{
+fit_on_folds(object, rset)
+}
+\arguments{
+\item{object}{must have a fit method, which returns an object with a
+predict method; which returns a tibble with .pred or .pred_1 and .pred_0}
+
+\item{rset}{e.g., the output of vfold_cv
+This function is based on tune::fit_resamples, but it is not a generic.
 Thus, for custom fitting procedures that are not workflows,
 the user still needs to ensure that a fit method exists,
 but does not need to ensure that a fit_resamples method exists.
 This version relies only on the \code{fit} method of the workflow.}
-\usage{
-fit_on_folds(object, rset)
 }
 \description{
-Based on tune::fit_resamples, but it is not a generic.
-Thus, for custom fitting procedures that are not workflows,
-the user still needs to ensure that a fit method exists,
-but does not need to ensure that a fit_resamples method exists.
-This version relies only on the \code{fit} method of the workflow.
+Fit workflow or object on resampled folds
 }
