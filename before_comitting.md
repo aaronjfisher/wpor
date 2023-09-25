@@ -20,7 +20,6 @@ stopifnot(no_errors)
 Before submitting a more involved pull request (e.g., > 100 lines or > 3 files changed), run a full devtools::check. Also run lint_dir and manually implement the changes.
 ```r
 lintr::lint_dir()
-system.time({devtools::check(vignettes = TRUE)})
 ```
 
 
@@ -32,6 +31,7 @@ rm(list=ls())
 unloadNamespace('wpor')
 devtools::load_all()
 
+devtools::install(build_vignettes = FALSE)
 devtools::install(build_vignettes = TRUE)
 browseVignettes('wpor')
 help(package='wpor')

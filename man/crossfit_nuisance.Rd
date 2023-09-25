@@ -6,17 +6,17 @@
 \title{Apply weighted pseudo-outcome regression}
 \usage{
 crossfit_nuisance(
-  dat,
+  data,
   outcome_wf,
   treatment_wf,
   min_prob = 0.01,
-  v,
+  v = 10,
   cf_order = 2,
   verbose = TRUE
 )
 
 fit_wpor(
-  dat,
+  data,
   nuisance_tbl = NULL,
   ...,
   pseudo_fun,
@@ -26,7 +26,7 @@ fit_wpor(
 )
 }
 \arguments{
-\item{dat}{a data.frame or tibble containing columns \code{treatment} and \code{outcome}.}
+\item{data}{a data.frame or tibble containing columns \code{treatment} and \code{outcome}.}
 
 \item{outcome_wf, treatment_wf}{tidmodel workflows for each modeling step. These should have formulas with
 \code{outcome} and \code{treatment} on the left-hand side, respectively.}
@@ -51,7 +51,7 @@ supplied.}
 \item{effect_wf}{A workflow for fitting the final effect (pseudo-outcome) model.}
 }
 \value{
-a tibble of nuisance predictions. If cf_order is >2, there will be more than 1 prediction per row of \code{dat}. The tibble contains: \code{.row}, the row index of \code{dat}; \code{.fold_id}, the fold used to train the predictions; \code{.pred_treatment}, the predicted probability of treatment; \code{.pred_control}, the predicted probability of control (equal to 1-.pred_treatment if cf_order <= 3); \code{.pred_outcome_0} the predicted outcome under treatment == 0, \code{.pred_outcome_1} the predicted outcome under treatment == 1; \code{.pred_outcome_obs} the predicted outcome under the observed treatment, i.e., marginalizing over treatment.
+a tibble of nuisance predictions. If cf_order is >2, there will be more than 1 prediction per row of \code{data}. The tibble contains: \code{.row}, the row index of \code{data}; \code{.fold_id}, the fold used to train the predictions; \code{.pred_treatment}, the predicted probability of treatment; \code{.pred_control}, the predicted probability of control (equal to 1-.pred_treatment if cf_order <= 3); \code{.pred_outcome_0} the predicted outcome under treatment == 0, \code{.pred_outcome_1} the predicted outcome under treatment == 1; \code{.pred_outcome_obs} the predicted outcome under the observed treatment, i.e., marginalizing over treatment.
 
 a fitted model; the output of \code{workflows:::fit.workflow}
 }

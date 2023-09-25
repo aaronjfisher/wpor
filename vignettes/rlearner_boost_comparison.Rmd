@@ -1,8 +1,8 @@
 ---
-title: "Testing WPOR"
+title: "R-Learner Boosting Comparison"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Testing WPOR}
+  %\VignetteIndexEntry{R-Learner Boosting Comparison}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -36,6 +36,7 @@ test_data <- test_list$data
 ```{r define_workflows}
 
 
+
 cn <- colnames(train_data)
 x_terms <- cn[starts_with('x.', vars = cn)]
 rhs <- paste(x_terms, collapse = " + ")
@@ -44,16 +45,9 @@ treatment_formula <- formula(paste("treatment ~", rhs))
 outcome_formula <- formula(paste("outcome ~", rhs))
 effect_formula <- formula(paste("pseudo ~", rhs))
 
-
-treatment_wf <- workflow() %>%
-  add_model(set_mode(rf_mod, "classification")) %>%
-  add_formula(treatment_formula)
-outcome_wf <- workflow() %>%
-  add_model(set_mode(rf_mod, "regression")) %>%
-  add_formula(outcome_formula)
-effect_wf <- workflow() %>%
-  add_model(set_mode(rf_mod, "regression")) %>%
-  add_formula(pseudo_formula)
+treatment_wf <- cvboost_spec(treatment_formula, 'classification')
+outcome_wf <- cvboost_spec(outcome_formula, 'regression')
+effect_wf <- cvboost_spec(effect_formula, 'regression')}
 
 treatment_wf
 outcome_wf
@@ -62,36 +56,7 @@ effect_wf
 
 ## Fit weighted pseudo-outcome regression
 
-```{r fit_wpor}
-set.seed(0) #set seed to compare results
-fitted <- fit_wpor(
-  data = train_data,
-  outcome_wf = outcome_wf,
-  treatment_wf = treatment_wf,
-  effect_wf = effect_wf,
-  # pseudo_fun = pseudo_DR,
-  # pseudo_fun = pseudo_cov,
-  pseudo_fun = pseudo_U,
-  # weight_fun = weight_DR_X,
-  # weight_fun = weight_DR_AX,
-  # weight_fun = weight_1,
-  weight_fun = weight_U_AX,
-  # weight_fun = weight_U_X,
-  min_prob = 0.01,
-  v = 5,
-  cf_order = 2
-)
-
-## MSE
-true_test_effect <- test_list$params$tau
-wpor_pred <- predict(fitted, test_data)$.pred
-mean((wpor_pred - true_test_effect)^2)
-```
-
-Alternatively, the nuisance predictions can be pre-computed. This is helpful when comparing options for `pseudo_fun` and/or `weight_fun`.
-
-```{r}
-set.seed(0)
+```{r fit_wpor, eval = FALSE, include = FALSE}
 nuisance_tbl <- crossfit_nuisance(
   data = train_data,
   outcome_wf = outcome_wf,
@@ -100,8 +65,7 @@ nuisance_tbl <- crossfit_nuisance(
   v = 5,
   cf_order = 2
 )
-
-fitted2 <- fit_wpor(
+fitted <- fit_wpor(
   data = train_data,
   nuisance_tbl = nuisance_tbl,
   effect_wf = effect_wf,
@@ -109,14 +73,40 @@ fitted2 <- fit_wpor(
   weight_fun = weight_U_AX,
 )
 
-mean((predict(fitted2, test_data)$.pred - true_test_effect)^2)
-```
+## MSE
+true_test_effect <- test_list$params$tau
+wpor_pred <- predict(fitted, test_data)$.pred
+mean((wpor_pred - true_test_effect)^2)
+cbind(wpor_pred, true_test_effect) %>%
+  plot
 
-# Two-Learner (T-Learner) approach
 
-```{r workspace, include=FALSE, eval=FALSE}
+new_data_formula <- formula(paste("~", rhs, '-1'))
+train_x <- model.matrix(new_data_formula, train_data)
+test_x <- model.matrix(new_data_formula, test_data)
+train_y <- train_data$outcome
+train_w <- as.numeric(train_data$treatment ==1)
+rboost_out <- rlearner::rboost(x = train_x, y = train_y, w= train_w)
+pred_rboost <- predict(rboost_out, test_x)
+
+mean((pred_rboost - true_test_effect)^2)
+
+cbind(
+  true_test_effect,
+  wpor_pred, 
+  pred_rboost
+  ) %>%
+  tibble
+plot(wpor_pred, pred_rboost, asp=1)
+
+
+
+
 t_learner_fitted <- t_learner(train_data,  outcome_wf)
 mean(
   (predict(t_learner_fitted, test_data)$.pred - true_test_effect)^2)
+tboost_out <- rlearner::tboost(x = train_x, y = train_y, w= train_w)
+mean(
+  (predict(tboost_out, test_x) - true_test_effect)^2)
 ```
 
