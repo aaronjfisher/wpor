@@ -4,7 +4,7 @@
 \alias{fit.cvboost_spec}
 \title{Fit a cvboost model based on a specification}
 \usage{
-\method{fit}{cvboost_spec}(cvboost_spec, data, weights = NULL)
+fit.cvboost_spec(cvboost_spec, data, weights = NULL)
 }
 \description{
 Fit a cvboost model based on a specification
