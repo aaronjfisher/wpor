@@ -1,0 +1,108 @@
+---
+title: "Testing WPOR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Testing WPOR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+## Simulate data
+
+```{r simulate_data}
+library("wpor")
+library("dplyr")
+library("tidymodels")
+
+set.seed(456)
+p <- 6
+n_train <- 500
+n_test <- 20000
+sigma <- 1
+setup <- "B"
+train_data <- sim_data(
+  setup = setup, n = n_train, p = p, sigma = sigma
+)$data
+
+test_list <- sim_data(
+  setup = setup, n = n_test, p = p, sigma = sigma
+)
+
+test_list$params$cov <- as.numeric(
+  test_list$params$tau*test_list$params$e*(1-test_list$params$e))
+
+test_data <- test_list$data
+```
+
+
+## Define workflows for each nuisance model
+```{r define_workflows}
+cn <- colnames(train_data)
+x_terms <- cn[starts_with("x.", vars = cn)]
+rhs <- paste(x_terms, collapse = " + ")
+
+treatment_formula <- formula(paste("treatment ~", rhs))
+outcome_formula <- formula(paste("outcome ~", rhs))
+effect_formula <- formula(paste("pseudo ~", rhs))
+
+rf_mod <-
+  rand_forest(trees = 100) %>%
+  set_engine("ranger")
+
+treatment_wf <- workflow() %>%
+  add_model(set_mode(rf_mod, "classification")) %>%
+  add_formula(treatment_formula)
+outcome_wf <- workflow() %>%
+  add_model(set_mode(rf_mod, "regression")) %>%
+  add_formula(outcome_formula)
+effect_wf <- workflow() %>%
+  add_model(set_mode(rf_mod, "regression")) %>%
+  add_formula(effect_formula)
+
+treatment_wf
+outcome_wf
+effect_wf
+```
+
+## Fit weighted pseudo-outcome regression
+
+
+```{r}
+
+fit_ccov <- fit_wpor(
+  data = train_data,
+  outcome_wf = outcome_wf,
+  treatment_wf = treatment_wf,
+  min_prob = 0.01,
+  v = 5,
+  cf_order = 2,
+  effect_wf = effect_wf,
+  pseudo_fun = pseudo_cov,
+  weight_fun = weight_1,
+)
+
+mean((
+  predict(fit_ccov, test_data)$.pred
+    - test_list$params$cov)^2)
+
+```
+
+```{r}
+nuisance_tbl <- crossfit_nuisance(
+  data = train_data,
+  outcome_wf = outcome_wf,
+  treatment_wf = treatment_wf,
+  min_prob = 0.01,
+  v = 5,
+  cf_order = 1
+)
+
+
+```
+

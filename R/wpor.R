@@ -94,6 +94,45 @@ crossfit_nuisance <- function(data,
   stopifnot(all(data$treatment %in% 0:1))
   data <- check_dat(data)
 
+  if (cf_order == 1) {
+    data <- data
+
+
+    if (verbose) message("Cross fitting treatment model")
+    E_treatment_tbl <- fit(treatment_wf, data) %>%
+      predict(new_data = data, type = "prob") %>%
+      mutate(.row = data$.row,
+             .fold_id = 1) %>%
+      mutate(.pred_treatment = ptrim(.pred_1, min_prob, 1 - min_prob)) %>%
+      select(.row, .fold_id, .pred_treatment)
+
+    train_1 <- filter(data, treatment == 1)
+    train_0 <- filter(data, treatment == 0)
+
+    if (verbose) message("Cross fitting outcome model")
+    E_outcome_1_tbl <- fit(outcome_wf, train_1) %>%
+      predict(new_data = data) %>%
+      mutate(.row = data$.row,
+             .fold_id = 1) %>%
+      rename(.pred_outcome_1 = .pred) %>%
+      select(.row, .fold_id, .pred_outcome_1)
+
+    E_outcome_0_tbl <- fit(outcome_wf, train_0) %>%
+      predict(new_data = data) %>%
+      mutate(.row = data$.row,
+             .fold_id = 1) %>%
+      rename(.pred_outcome_0 = .pred) %>%
+      select(.row, .fold_id, .pred_outcome_0)
+
+    E_outcome_obs <- fit(outcome_wf, data) %>%
+      predict(new_data = data) %>%
+      mutate(.row = data$.row,
+             .fold_id = 1) %>%
+      rename(.pred_outcome_obs = .pred) %>%
+      select(.row, .fold_id, .pred_outcome_obs)
+  } else {
+
+
   if (cf_order == 2) {
     folds_all <- vfold_cv(data, v) # contains full data
   }
@@ -124,6 +163,8 @@ crossfit_nuisance <- function(data,
     select(.row, .fold_id, .pred_outcome_obs)
   ## !! decide whether to compute this adaptively??
 
+  }
+
   if (verbose) message("Reshaping nuisance predictions")
   pred_df <- merge(E_outcome_0_tbl, E_outcome_1_tbl) %>%
     merge(E_outcome_obs) %>%
@@ -133,7 +174,7 @@ crossfit_nuisance <- function(data,
     nest(.by = .row) %>%
     rename(.pred = data)
 
-  if (cf_order == 2) {
+  if (cf_order %in% 1:2) {
     pred_df2 <- pred_df
     pred_df2$.pred <- lapply(pred_df$.pred, \(p){
       stopifnot(length(p$.fold_id) == 1)
