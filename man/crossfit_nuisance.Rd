@@ -22,6 +22,7 @@ fit_wpor(
   pseudo_fun,
   weight_fun,
   effect_wf,
+  standardize_weights = FALSE,
   verbose = TRUE
 )
 }

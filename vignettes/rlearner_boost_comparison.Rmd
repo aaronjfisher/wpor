@@ -46,9 +46,19 @@ treatment_formula <- formula(paste("treatment ~", rhs))
 outcome_formula <- formula(paste("outcome ~", rhs))
 effect_formula <- formula(paste("pseudo ~", rhs))
 
-treatment_wf <- cvboost_spec(treatment_formula, "classification")
-outcome_wf <- cvboost_spec(outcome_formula, "regression")
+
+treatment_wf <- tuned_boost_spec(
+  treatment_formula,
+  "classification",
+  data = train_data
+)
+outcome_wf <- tuned_boost_spec(
+  outcome_formula,
+  "regression",
+  data = train_data
+)
 effect_wf <- cvboost_spec(effect_formula, "regression")
+
 
 treatment_wf
 outcome_wf
@@ -73,11 +83,12 @@ fitted <- fit_wpor(
   # pseudo_fun = pseudo_DR,
   # pseudo_fun = pseudo_cov,
   pseudo_fun = pseudo_U,
-  # weight_fun = weight_DR_X
-  # weight_fun = weight_DR_AX
-  # weight_fun = weight_1
-  weight_fun = weight_U_AX
-  # weight_fun = weight_U_X
+  # weight_fun = weight_DR_X,
+  # weight_fun = weight_DR_AX,
+  # weight_fun = weight_1,
+  weight_fun = weight_U_AX,
+  # weight_fun = weight_U_X,
+  standardize_weights = FALSE
 )
 
 ## MSE
@@ -86,8 +97,70 @@ wpor_pred <- predict(fitted, test_data)$.pred
 mean((wpor_pred - true_test_effect)^2)
 cbind(wpor_pred, true_test_effect) %>%
   plot()
+```
 
+```{r fast_approx_version}
+# cv_trt_pred <- fit.cvboost_spec(treatment_wf, train_data)$best_xgb_cvfit$pred
+# cv_out_obs_pred <- fit.cvboost_spec(outcome_wf, train_data)$best_xgb_cvfit$pred
 
+# # cv_out_0_pred <- (train_data %>%
+# #   filter(treatment == 0) %>%
+# #   fit(outcome_wf, .))$best_xgb_cvfit$pred
+# # cv_out_1_pred <- (train_data %>%
+# #   filter(treatment == 1) %>%
+# #   fit(outcome_wf, .))$best_xgb_cvfit$pred
+
+# # train_expand <- mutate(train_data, .row = 1:n()) %>%
+# #   tibble()
+# # cv_out_0_expand <- tibble(
+# #   .row = which(train_data$treatment==0),
+# #   .pred = cv_out_0_pred
+# #   ) %>%
+# #   right_join(train_expand) %>%
+# #   arrange(.row) %>%
+# #   pull(.pred)
+# # cv_out_1_expand <- tibble(
+# #   .row = which(train_data$treatment==1),
+# #   .pred = cv_out_1_pred
+# #   ) %>%
+# #   right_join(train_expand) %>%
+# #   arrange(.row) %>%
+# #   pull(.pred)
+# # cv_out_0_expand[is.na(cv_out_0_expand)] <- 0
+# # cv_out_1_expand[is.na(cv_out_1_expand)] <- 0
+
+# nuisance_fast_tbl <- tibble(
+#   .row = 1:nrow(train_data),
+#   outcome = train_data$outcome,
+#   treatment = train_data$treatment,
+#   .pred_treatment = cv_trt_pred,
+#   .pred_control = 1-cv_trt_pred,
+#   #.pred_outcome_0 = cv_out_0_expand,
+#   #.pred_outcome_1 = cv_out_1_expand,
+#   .pred_outcome_obs = cv_out_obs_pred,
+# )
+# fitted_fast <- fit_wpor(
+#   data = train_data,
+#   nuisance_tbl = nuisance_fast_tbl,
+#   effect_wf = effect_wf,
+#   standardize_weights = FALSE,
+#   # pseudo_fun = pseudo_DR,
+#   # pseudo_fun = pseudo_cov,
+#    pseudo_fun = pseudo_U,
+#   # weight_fun = weight_DR_X
+#   # weight_fun = weight_DR_AX
+#   # weight_fun = weight_1
+#    weight_fun = weight_U_AX
+#   # weight_fun = weight_U_X
+# )
+
+# wpor_fast_pred <- predict(fitted_fast, test_data)$.pred
+# mean((wpor_fast_pred - test_list$params$tau)^2)
+# cbind(wpor_fast_pred, test_list$params$tau) %>%
+#   plot()
+```
+
+```{r rlearner_package}
 new_data_formula <- formula(paste("~", rhs, "-1"))
 train_x <- model.matrix(new_data_formula, train_data)
 test_x <- model.matrix(new_data_formula, test_data)
@@ -96,10 +169,10 @@ train_w <- as.numeric(train_data$treatment == 1)
 rboost_out <- rlearner::rboost(x = train_x, y = train_y, w = train_w)
 pred_rboost <- predict(rboost_out, test_x)
 
-mean((pred_rboost - true_test_effect)^2)
+mean((pred_rboost - test_list$params$tau)^2)
 
 cbind(
-  true_test_effect,
+  test_list$params$tau,
   wpor_pred,
   pred_rboost
 ) %>%
@@ -108,14 +181,15 @@ plot(wpor_pred, pred_rboost, asp = 1)
 
 
 
-
-t_learner_fitted <- t_learner(train_data, outcome_wf)
+t_learner_wf <- cvboost_spec(outcome_formula, "regression")
+t_learner_fitted <- t_learner(train_data, t_learner_wf)
 mean(
-  (predict(t_learner_fitted, test_data)$.pred - true_test_effect)^2
+  (predict(t_learner_fitted, test_data)$.pred - test_list$params$tau)^2
 )
 tboost_out <- rlearner::tboost(x = train_x, y = train_y, w = train_w)
 mean(
-  (predict(tboost_out, test_x) - true_test_effect)^2
+  (predict(tboost_out, test_x) - test_list$params$tau)^2
 )
 ```
+
 

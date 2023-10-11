@@ -199,6 +199,7 @@ fit_wpor <- function(data,
                      nuisance_tbl = NULL,
                      ...,
                      pseudo_fun, weight_fun, effect_wf,
+                     standardize_weights = FALSE,
                      verbose = TRUE) {
   if (is.null(nuisance_tbl)) {
     nuisance_tbl <- crossfit_nuisance(
@@ -218,7 +219,7 @@ fit_wpor <- function(data,
   wts <- nuisance_tbl %>%
     select(formalArgs(weight_fun)) %>%
     do.call(weight_fun, .)
-  wts <- wts / mean(wts)
+  if (standardize_weights) wts <- wts / mean(wts)
   nuisance_tbl$.weights <- hardhat::importance_weights(wts)
   if (verbose) message("Fitting effect model")
   dat_effect <- left_join(

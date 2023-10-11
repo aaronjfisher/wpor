@@ -4,7 +4,7 @@
 \alias{predict.cvboost_fit}
 \title{Predict cvboost results on new data}
 \usage{
-\method{predict}{cvboost_fit}(cvboost_fit, new_data)
+\method{predict}{cvboost_fit}(object, new_data)
 }
 \description{
 Predict cvboost results on new data

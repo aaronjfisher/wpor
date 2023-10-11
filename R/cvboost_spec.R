@@ -1,5 +1,12 @@
+#' @export
+fit <- function(...) UseMethod("fit")
+
 add_class <- function(obj, class_name) {
   class(obj) <- c(class_name, class(obj))
+  return(obj)
+}
+rm_class <- function(obj, class_name) {
+  class(obj) <- setdiff(class(obj), class_name)
   return(obj)
 }
 
@@ -12,48 +19,108 @@ cvboost_spec <- function(formula, mode, control = NULL) {
     add_class("cvboost_spec")
 }
 
-#' Fit a cvboost model based on a specification
-#' @export
-fit.cvboost_spec <- function(cvboost_spec, data, weights = NULL) {
-  x_mat <- model.matrix(cvboost_spec$formula, data = data)
-  y <- model.frame(cvboost_spec$formula, data = data)[[1]]
-  if (cvboost_spec$mode == "classification") {
+get_x <- function(spec, data) {
+  formula_x <- spec$formula[-2] # remove LHS
+  model.matrix(formula_x, data = data)
+}
+get_y <- function(spec, data) {
+  y <- model.frame(spec$formula, data = data)[[1]]
+  if (spec$mode == "classification") {
     stopifnot(all(y %in% 0:1))
     y <- as.numeric(y == 1)
   }
+  y
+}
 
+#' Fit a cvboost model based on a specification
+#' @export
+fit.cvboost_spec <- function(object, data, weights = NULL) {
   fitted <- do.call(rlearner::cvboost, c(
     list(
-      x = x_mat, y = y,
+      x = get_x(object, data),
+      y = get_y(object, data),
       weights = weights,
-      objective = switch(cvboost_spec$mode,
+      objective = switch(object$mode,
         regression = "reg:squarederror",
         classification = "binary:logistic"
       )
     ),
-    cvboost_spec$control
+    object$control
   ))
 
-  list(fitted = fitted, spec = cvboost_spec) %>%
+  list(
+    fitted = fitted,
+    spec = object,
+    param = fitted$best_param,
+    nrounds = fitted$best_ntreelimit,
+    best_xgb_cvfit = fitted$best_xgb_cvfit
+  ) %>%
     add_class("cvboost_fit")
 }
 
 #' Predict cvboost results on new data
 #' @export
-predict.cvboost_fit <- function(cvboost_fit, new_data) {
-  formula_x <- cvboost_fit$spec$formula[-2] # remove LHS
-  newx_mat <- model.matrix(formula_x, data = new_data)
+predict.cvboost_fit <- function(object, new_data) {
+  newx_mat <- get_x(object$spec, new_data)
   response <- predict(
-    object = cvboost_fit$fitted, newx = newx_mat
+    object = object$fitted, newx = newx_mat
   )
-  if (cvboost_fit$spec$mode == "regression") {
+  postprocess_response(object$spec, response)
+}
+
+postprocess_response <- function(spec, response) {
+  if (spec$mode == "regression") {
     return(tibble(.pred = response))
   }
-  if (cvboost_fit$spec$mode == "classification") {
+  if (spec$mode == "classification") {
     return(tibble(
       .pred_0 = 1 - response,
       .pred_1 = response
     ))
   }
   stop("invalid mode")
+}
+
+#' @export
+tuned_boost_spec <- function(
+    formula, mode, control = NULL,
+    data, weights = NULL) {
+  init_spec <- cvboost_spec(
+    formula = formula, mode = mode, control = control
+  )
+  fit_init <- fit(init_spec, data, weights = weights)
+  init_spec$fit_init <- fit_init
+
+  out <- init_spec %>%
+    rm_class("cvboost_spec") %>%
+    add_class("tuned_boost_spec")
+  return(out)
+}
+
+#' @export
+fit.tuned_boost_spec <- function(object, data, weights = NULL) {
+  DMatrix <- xgboost::xgb.DMatrix(
+    data = get_x(object, data),
+    label = get_y(object, data),
+    weight = weights
+  )
+  xgb_model <- xgboost::xgb.train(
+    data = DMatrix,
+    params = object$fit_init$param,
+    nrounds = object$fit_init$nrounds
+  )
+  list(
+    fitted = xgb_model,
+    spec = object
+  ) %>%
+    add_class("tuned_boost_fit")
+}
+
+#' @export
+predict.tuned_boost_fit <- function(object, new_data) {
+  response <- predict(
+    object$fitted,
+    newdata = get_x(object$spec, new_data)
+  )
+  postprocess_response(object$spec, response)
 }
