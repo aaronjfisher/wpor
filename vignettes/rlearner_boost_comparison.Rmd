@@ -67,7 +67,7 @@ effect_wf
 
 ## Fit weighted pseudo-outcome regression
 
-```{r fit_wpor, eval = FALSE, include = FALSE}
+```{r fit_wpor}
 nuisance_tbl <- crossfit_nuisance(
   data = train_data,
   outcome_wf = outcome_wf,
