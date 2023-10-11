@@ -1,5 +1,6 @@
 #' @export
 fit <- function(...) UseMethod("fit")
+fit.default <- function(object, ...) parsnip::fit(object)
 
 add_class <- function(obj, class_name) {
   class(obj) <- c(class_name, class(obj))
