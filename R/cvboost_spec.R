@@ -83,6 +83,7 @@ postprocess_response <- function(spec, response) {
   stop("invalid mode")
 }
 
+#' Define a boosting specification, tuned by cross-validation
 #' @export
 tuned_boost_spec <- function(
     formula, mode, control = NULL,
@@ -99,6 +100,7 @@ tuned_boost_spec <- function(
   return(out)
 }
 
+#' Fit a tuned, boosting specification
 #' @export
 fit.tuned_boost_spec <- function(object, data, weights = NULL) {
   DMatrix <- xgboost::xgb.DMatrix(
@@ -109,7 +111,8 @@ fit.tuned_boost_spec <- function(object, data, weights = NULL) {
   xgb_model <- xgboost::xgb.train(
     data = DMatrix,
     params = object$fit_init$param,
-    nrounds = object$fit_init$nrounds
+    nrounds = object$fit_init$nrounds,
+    nthread = 1
   )
   list(
     fitted = xgb_model,
