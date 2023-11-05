@@ -1,5 +1,5 @@
 #devtools::install_github('aaronjfisher/wpor')
-library("wpor")
+devtools::load_all('..')
 library("dplyr")
 library("tidymodels")
 library("pbapply")
@@ -22,7 +22,13 @@ simulate_from_df <- function(sim_df, nthread = 1, verbose = FALSE){
   # weight_fun = weight_U_X,
   mse_NA <- expand.grid(
     pseudo = c('pseudo_U','pseudo_DR','T'),#rlearner_package
-    weights = c('weight_1','weight_U_X', 'weight_U_AX','weight_DR_X', 'weight_DR_AX'),
+    weights = c(
+      'weight_1',
+      'weight_U_X', 
+      'weight_U_AX',
+      'weight_DR_X', 
+      'weight_DR_AX',
+      'weight_DR_alt_AX'),
     mse = NA
   ) %>%
     filter(
@@ -30,6 +36,7 @@ simulate_from_df <- function(sim_df, nthread = 1, verbose = FALSE){
       !(pseudo == 'rlearner_package' & weights != 'weight_U_AX'),
       !(pseudo == 'pseudo_U' & weights == 'weight_DR_X'),
       !(pseudo == 'pseudo_U' & weights == 'weight_DR_AX'),
+      !(pseudo == 'pseudo_U' & weights == 'weight_DR_alt_AX'),
       !(pseudo == 'pseudo_DR' & weights == 'weight_U_X'),
       !(pseudo == 'pseudo_DR' & weights == 'weight_U_AX')
       ) %>%
@@ -140,7 +147,8 @@ simulate_from_df <- function(sim_df, nthread = 1, verbose = FALSE){
           'weight_U_X' = weight_U_X,
           'weight_U_AX' = weight_U_AX,
           'weight_DR_X' = weight_DR_X,
-          'weight_DR_AX' = weight_DR_AX
+          'weight_DR_AX' = weight_DR_AX,
+          'weight_DR_alt_AX' = weight_DR_alt_AX
         )
         fitted_j <- fit_wpor(
           data = train_data,

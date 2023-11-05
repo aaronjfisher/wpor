@@ -1,10 +1,9 @@
-
 library("rslurm")
 source('wpor_sim_fun.R')
 
 # s0 <- slurm_fun(0)
 # gc()
-nsim <- 200
+nsim <- 100
 sequential_length = 5
 cpus_per_node = 16
 # sequential_length * cpus_per_node * 90
@@ -14,7 +13,7 @@ results_full <- expand.grid(
   n_obs = c(1000, 500, 250),
   p = 6,#c(6,12),
   sigma = 1,#c(0.5, 1, 2),#, 3),
-  setup = c('A','B','C','D'),
+  setup = c('A','B','C','D','E','F'),
   nuisance = c('estimated'),
   seed = 1:nsim
 ) %>% 
@@ -42,7 +41,7 @@ sjob <- slurm_map(
   nodes = min(nsim, 80), # doesn't include multi-threading; see cpus_per_node argument
   f = simulate_from_df,
   pkgs = c("wpor", "dplyr", "tidymodels", "pbapply", "rlearner"),
-  jobname = 'ivw200',
+  jobname = paste0(Sys.Date(),'_ivw_', nsim),
   slurm_options = list(
     partition = 'M-96Cpu-742GB',
     'mail-user'=Sys.getenv('USEREMAIL'),
@@ -52,7 +51,6 @@ sjob <- slurm_map(
   cpus_per_node = cpus_per_node
 )
 #simulate_from_df(results_list[[1]])
-simulate_from_df(results_full[1476,])
 
 ## !! pure mclapply doesn't seem to work well! too slow.
 # library(parallel)
