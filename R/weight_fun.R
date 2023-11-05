@@ -26,6 +26,17 @@ weight_DR_AX <- function(treatment,
 
 #' @export
 #' @rdname weight_DR_X
+weight_DR_alt_AX <- function(treatment,
+                         .pred_treatment,
+                         .pred_control) {
+  ifelse(treatment == 1,
+         .pred_treatment,
+         .pred_control
+  )
+}
+
+#' @export
+#' @rdname weight_DR_X
 weight_U_AX <- function(treatment,
                         .pred_treatment) {
   trt_num <- as.numeric(treatment == 1)
