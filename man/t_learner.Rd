@@ -4,7 +4,7 @@
 \alias{t_learner}
 \title{Fit a two-model-learner (t-learner)}
 \usage{
-t_learner(data, outcome_wf)
+t_learner(data, outcome_0_wf, outcome_1_wf = outcome_0_wf)
 }
 \description{
 Fit a two-model-learner (t-learner)

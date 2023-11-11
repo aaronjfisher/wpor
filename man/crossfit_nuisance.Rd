@@ -7,7 +7,9 @@
 \usage{
 crossfit_nuisance(
   data,
-  outcome_wf,
+  outcome_obs_wf,
+  outcome_1_wf,
+  outcome_0_wf,
   treatment_wf,
   min_prob = 0.01,
   v = 10,
@@ -29,7 +31,7 @@ fit_wpor(
 \arguments{
 \item{data}{a data.frame or tibble containing columns \code{treatment} and \code{outcome}.}
 
-\item{outcome_wf, treatment_wf}{tidmodel workflows for each modeling step. These should have formulas with
+\item{outcome_1_wf, outcome_0_wf, outcome_obs_wf, treatment_wf}{tidmodel workflows for each modeling step. These should have formulas with
 \code{outcome} and \code{treatment} on the left-hand side, respectively.}
 
 \item{min_prob}{a truncation probability for the propensity scores.}
