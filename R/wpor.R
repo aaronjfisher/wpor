@@ -76,7 +76,7 @@ check_dat <- function(data) {
 
 #' Apply weighted pseudo-outcome regression
 #' @param data a data.frame or tibble containing columns `treatment` and `outcome`.
-#' @param outcome_wf,treatment_wf tidmodel workflows for each modeling step. These should have formulas with
+#' @param outcome_1_wf,outcome_0_wf,outcome_obs_wf,treatment_wf tidmodel workflows for each modeling step. These should have formulas with
 #' `outcome` and `treatment` on the left-hand side, respectively.
 #' @param min_prob a truncation probability for the propensity scores.
 #' @param v number of folds, passed to vfold_cv
@@ -84,12 +84,13 @@ check_dat <- function(data) {
 #' @param verbose whether to print progress.
 #' @returns a tibble of nuisance predictions. If cf_order is >2, there will be more than 1 prediction per row of `data`. The tibble contains: `.row`, the row index of `data`; `.fold_id`, the fold used to train the predictions; `.pred_treatment`, the predicted probability of treatment; `.pred_control`, the predicted probability of control (equal to 1-.pred_treatment if cf_order <= 3); `.pred_outcome_0` the predicted outcome under treatment == 0, `.pred_outcome_1` the predicted outcome under treatment == 1; `.pred_outcome_obs` the predicted outcome under the observed treatment, i.e., marginalizing over treatment.
 #' @export
-crossfit_nuisance <- function(data,
-                              outcome_wf, treatment_wf,
-                              min_prob = 0.01,
-                              v = 10,
-                              cf_order = 2,
-                              verbose = TRUE) {
+crossfit_nuisance <- function(
+    data,
+    outcome_obs_wf, outcome_1_wf, outcome_0_wf, treatment_wf,
+    min_prob = 0.01,
+    v = 10,
+    cf_order = 2,
+    verbose = TRUE) {
   stopifnot(is.factor(data$treatment))
   stopifnot(all(data$treatment %in% 0:1))
   data <- check_dat(data)
@@ -113,13 +114,13 @@ crossfit_nuisance <- function(data,
     select(.row, .fold_id, .pred_treatment)
 
   if (verbose) message("Cross fitting outcome model")
-  E_outcome_1_tbl <- fit_on_folds(outcome_wf, folds_train_1) %>%
+  E_outcome_1_tbl <- fit_on_folds(outcome_1_wf, folds_train_1) %>%
     rename(.pred_outcome_1 = .pred) %>%
     select(.row, .fold_id, .pred_outcome_1)
-  E_outcome_0_tbl <- fit_on_folds(outcome_wf, folds_train_0) %>%
+  E_outcome_0_tbl <- fit_on_folds(outcome_0_wf, folds_train_0) %>%
     rename(.pred_outcome_0 = .pred) %>%
     select(.row, .fold_id, .pred_outcome_0)
-  E_outcome_obs <- fit_on_folds(outcome_wf, folds_all) %>%
+  E_outcome_obs <- fit_on_folds(outcome_obs_wf, folds_all) %>%
     rename(.pred_outcome_obs = .pred) %>%
     select(.row, .fold_id, .pred_outcome_obs)
   ## !! decide whether to compute this adaptively??
