@@ -104,25 +104,36 @@ simulate_from_df <- function(
       treatment_wf <- specifications$treatment_wf
       outcome_1_wf <- specifications$outcome_1_wf
       outcome_0_wf <- specifications$outcome_0_wf
-      outcome_obs_wf <- specifications$outcome_obs_wf
+      outcome_obs_wf <- 
       effect_wf <- specifications$effect_wf
-    } else if(sim_df$learners[i]=='random_forest'){
-      rf_mod <-
-        rand_forest(trees = 100) %>%
-        set_engine("ranger")
+    } else if(sim_df$learners[i] %in% c('parsnip_random_forest', 'parsnip_boost')){
+      if(sim_df$learners[i] == 'parsnip_random_forest'){
+        mod_spec <- rand_forest(trees = tune(), min_n = tune())
+      }
+      if(sim_df$learners[i] == 'parsnip_boost'){
+        mod_spec <- boost_tree(
+          trees = tune(), 
+          min_n = tune(), 
+          learn_rate = tune(), 
+          stop_iter = tune()
+          )
+      }
       
       treatment_wf <- workflow() %>%
-        add_model(set_mode(rf_mod, "classification")) %>%
-        add_formula(treatment_formula)
-      outcome_0_wf <-
-      outcome_1_wf <-
-      outcome_obs_wf <- workflow() %>%
-        add_model(set_mode(rf_mod, "regression")) %>%
+        add_model(set_mode(mod_spec, "classification")) %>%
+        add_formula(treatment_formula) %>%
+        tune_wf(train_data)
+      out_wf <- workflow() %>%
+        add_model(set_mode(mod_spec, "regression")) %>%
         add_formula(outcome_formula)
+      outcome_0_wf <- tune_wf(out_wf, filter(train_data, treatment == 0))
+      outcome_1_wf <- tune_wf(out_wf, filter(train_data, treatment == 1))
+      outcome_obs_wf <- tune_wf(out_wf, train_data)
       effect_wf <- workflow() %>%
-        add_model(set_mode(rf_mod, "regression")) %>%
-        add_formula(effect_formula)
-    } else if(sim_df$learners[i]=='boost'){
+        add_model(set_mode(mod_spec, "regression")) %>%
+        add_formula(effect_formula) %>%
+        as.tuneflow()
+    } else if(sim_df$learners[i]=='cvboost'){
       if(verbose) message('tuning specifications...')
       treatment_wf <- tuned_boost_spec(
         treatment_formula,

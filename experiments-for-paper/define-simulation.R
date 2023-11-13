@@ -3,7 +3,7 @@
 nsim <- 100
 
 results_full <- expand.grid(
-  learners = c('random_forest', 'boost'),
+  learners = c('parsnip_random_forest', 'parsnip_boost'),#'cvboost'
   n_obs = c(1000, 500, 250),
   p = 6,#c(6,12),
   sigma = 1,#c(0.5, 1, 2),#, 3),
