@@ -1,11 +1,19 @@
 #devtools::install_github('aaronjfisher/wpor')
-devtools::load_all('..')
+#devtools::document('..')
+#devtools::install('..')
+library('wpor')
 library("dplyr")
 library("tidymodels")
 library("pbapply")
 library("rlearner")
 
-simulate_from_df <- function(sim_df, nthread = 1, verbose = FALSE){
+simulate_from_df <- function(
+    sim_df, 
+    nthread = 1, 
+    verbose = FALSE,
+    return_specifications_only = FALSE,
+    pretuned = NULL,
+    include_rlearner_comparison = all(sim_df$seed < 25)){
   
   n_test <- 10000
   cf_order <- 2
@@ -21,7 +29,7 @@ simulate_from_df <- function(sim_df, nthread = 1, verbose = FALSE){
   # weight_fun = weight_U_AX,
   # weight_fun = weight_U_X,
   mse_NA <- expand.grid(
-    pseudo = c('pseudo_U','pseudo_DR','T'),#rlearner_package
+    pseudo = c('pseudo_U','pseudo_DR','T', 'rlearner_package'),
     weights = c(
       'weight_1',
       'weight_U_X', 
@@ -42,13 +50,22 @@ simulate_from_df <- function(sim_df, nthread = 1, verbose = FALSE){
       ) %>%
     arrange(pseudo, weights)
   
+  if(return_specifications_only){
+    sim_df$specifications <- vector('list', nrow(sim_df))
+  }
   
+  if(!include_rlearner_comparison){
+    mse_NA <- filter(mse_NA, pseudo != 'rlearner_package')
+  }
   
   for (i in 1:nrow(sim_df)){
     if(i==1) pb <- timerProgressBar(0, nrow(sim_df), width=15)
-    if(verbose) message('\n')
-    print(sim_df[i,])
-    if(verbose) message(Sys.time())
+    start_i <- Sys.time()
+    if(verbose){
+      message('\n')
+      print(sim_df[i,])
+      message(Sys.time())
+    }
     
     set.seed(sim_df$seed[i])
     n_obs <- sim_df$n_obs[i]
@@ -74,8 +91,22 @@ simulate_from_df <- function(sim_df, nthread = 1, verbose = FALSE){
     effect_formula <- formula(paste("pseudo ~", rhs))
     
     
-    
-    if(sim_df$learners[i]=='random_forest'){
+    if(!is.null(pretuned)){
+      stopifnot(!return_specifications_only)
+      specifications <- (pretuned %>%
+        filter(
+          learners == sim_df$learners[i],
+          n_obs == sim_df$n_obs[i],
+          p == sim_df$p[i],
+          sigma == sim_df$sigma[i],
+          setup == sim_df$setup[i]
+        ))$specifications[[1]]
+      treatment_wf <- specifications$treatment_wf
+      outcome_1_wf <- specifications$outcome_1_wf
+      outcome_0_wf <- specifications$outcome_0_wf
+      outcome_obs_wf <- specifications$outcome_obs_wf
+      effect_wf <- specifications$effect_wf
+    } else if(sim_df$learners[i]=='random_forest'){
       rf_mod <-
         rand_forest(trees = 100) %>%
         set_engine("ranger")
@@ -83,15 +114,15 @@ simulate_from_df <- function(sim_df, nthread = 1, verbose = FALSE){
       treatment_wf <- workflow() %>%
         add_model(set_mode(rf_mod, "classification")) %>%
         add_formula(treatment_formula)
-      t_learner_wf <-
-      outcome_wf <- workflow() %>%
+      outcome_0_wf <-
+      outcome_1_wf <-
+      outcome_obs_wf <- workflow() %>%
         add_model(set_mode(rf_mod, "regression")) %>%
         add_formula(outcome_formula)
       effect_wf <- workflow() %>%
         add_model(set_mode(rf_mod, "regression")) %>%
         add_formula(effect_formula)
-    }
-    if(sim_df$learners[i]=='boost'){
+    } else if(sim_df$learners[i]=='boost'){
       if(verbose) message('tuning specifications...')
       treatment_wf <- tuned_boost_spec(
         treatment_formula,
@@ -99,27 +130,53 @@ simulate_from_df <- function(sim_df, nthread = 1, verbose = FALSE){
         data = train_data,
         control = list(nthread = nthread)
       )
-      outcome_wf <- tuned_boost_spec(
+      outcome_obs_wf <- tuned_boost_spec(
         outcome_formula,
         "regression",
         data = train_data,
         control = list(nthread = nthread)
       )
-      t_learner_wf <- cvboost_spec(outcome_formula, "regression",
-                                   control = list(nthread = nthread))
+      outcome_1_wf <- tuned_boost_spec(
+        outcome_formula,
+        "regression",
+        data = filter(train_data, treatment == 1),
+        control = list(nthread = nthread)
+      )
+      outcome_0_wf <- tuned_boost_spec(
+        outcome_formula,
+        "regression",
+        data = filter(train_data, treatment == 0),
+        control = list(nthread = nthread)
+      )
       effect_wf <- cvboost_spec(effect_formula, "regression",
                                 control = list(nthread = nthread))
+    }
+    tune_time_i <- Sys.time()
+    
+    if(return_specifications_only){
+      sim_df$specifications[[i]] <- list(
+        treatment_wf = treatment_wf,
+        outcome_obs_wf = outcome_obs_wf,
+        outcome_1_wf = outcome_1_wf, 
+        outcome_0_wf = outcome_0_wf,
+        effect_wf = effect_wf
+      )
+      next
     }
     
     nuisance_tbl <- crossfit_nuisance(
       data = train_data,
-      outcome_wf = outcome_wf,
+      outcome_obs_wf = outcome_obs_wf,
+      outcome_1_wf = outcome_1_wf,
+      outcome_0_wf = outcome_0_wf,
       treatment_wf = treatment_wf,
       min_prob = min_prob,
       v = v,
       cf_order = cf_order,
       verbose = verbose
     )
+    
+    crossfit_time_i <- Sys.time()
     
     mse_i <- mse_NA
     for(j in 1:nrow(mse_i)){
@@ -135,7 +192,8 @@ simulate_from_df <- function(sim_df, nthread = 1, verbose = FALSE){
       } else if (mse_i$pseudo[j] == 'T') {
         fitted_j <- t_learner(
           data = train_data,
-          outcome_wf = t_learner_wf
+          outcome_1_wf = outcome_1_wf,
+          outcome_0_wf = outcome_0_wf
         )
       } else {
         pseudo_fun <- switch(as.character(mse_i$pseudo[j]),
@@ -165,9 +223,14 @@ simulate_from_df <- function(sim_df, nthread = 1, verbose = FALSE){
         pred <- predict(fitted_j, test_data)$.pred
       }
       mse_i$mse[j] <- mean( ( pred - test_list$params$tau )^2 )
+      
     }
-   
+    por_time_i <- Sys.time()
+    
     sim_df$mse[[i]] <- mse_i
+    sim_df$tune_time[i] <- tune_time_i - start_i
+    sim_df$crossfit_time[i] <- crossfit_time_i - tune_time_i
+    sim_df$por_time[i] <- por_time_i - crossfit_time_i
     setTimerProgressBar(pb, i)
   }
     

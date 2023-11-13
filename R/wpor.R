@@ -62,7 +62,7 @@ fit_on_folds <- function(object, rset) {
     )) %>%
     select(-splits) %>%
     rename(.fold_id = id) %>%
-    unnest(predictions) %>%
+    tidyr::unnest(predictions) %>%
     arrange(.row, .fold_id) %>%
     relocate(.row, .before = everything())
 }
@@ -181,7 +181,7 @@ crossfit_nuisance <- function(
   nuisance_tbl <- data %>%
     select(.row, outcome, treatment) %>%
     left_join(pred_df2, by = join_by(.row)) %>%
-    unnest(.pred)
+    tidyr::unnest(.pred)
 
   nuisance_tbl
 }

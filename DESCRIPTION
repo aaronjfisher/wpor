@@ -13,6 +13,7 @@ Imports:
   parsnip,
   pryr,
   rsample,
+  tidyr,
   tune
 VignetteBuilder: knitr
 Suggests: 
