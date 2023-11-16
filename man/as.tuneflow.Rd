@@ -6,7 +6,14 @@
 \alias{fit.tuneflow}
 \title{Tune a workflow and return the best workflow}
 \usage{
-tune_wf(wf, data, v = 5, ...)
+tune_wf(
+  wf,
+  data = NULL,
+  v = 10,
+  resamples = rsample::vfold_cv(data, v),
+  control = finetune::control_race(burn_in = 2),
+  ...
+)
 
 as.tuneflow(wf, ...)
 
@@ -39,11 +46,9 @@ to finalize the workflow, using the stored arguments from \code{as.tuneflow},
 and then applies \code{fit.workflow} to fit the finalized workflow.
 }
 \examples{
-dontrun{
-#' library(tidymodels)
+\dontrun{
+library(tidymodels)
 library(dplyr)
-data(cells, package = "modeldata")
-cells <- cells \%>\% select(-case)
 
 train_data <- sim_data(setup = 'A', n = 300, p = 6, sigma = 1)$data
 
@@ -69,7 +74,7 @@ if(FALSE){
 }
 
 ## Example using tune_wf explicitly
-tuned_wf <- tune_wf(wf, data = train_data)
+tuned_wf <- tune_wf(wf, data = train_data)$final_workflow
 fitted1 <- fit(tuned_wf, train_data)
 pred1 <- predict(fitted1, train_data, 'prob')
 

@@ -7,16 +7,25 @@
 #' @param ... passed to tune_race_anova
 #' @export
 #' @rdname  as.tuneflow
-tune_wf <- function(wf, data, v = 5, ...){
-  train_cv <- rsample::vfold_cv(data, v)
-  #tg <- tune_grid(wf, train_cv)
-  tg <- finetune::tune_race_anova(wf, train_cv, ...)
-  # plot_race(tg); dev.off()
-  #tg <- finetune::tune_sim_anneal(wf, train_cv, iter = 20)
+tune_wf <- function(
+    wf, data = NULL, 
+    v = 10, 
+    resamples = rsample::vfold_cv(data, v), 
+    control = finetune::control_race(burn_in = 2), 
+    ...
+  ){
   mode <- extract_spec_parsnip(wf)$mode
-  if(mode == 'classification') metric = 'roc_auc'
-  if(mode == 'regression') metric = 'rmse'
-  finalize_workflow(wf, select_best(tg, metric))
+  if(mode == 'classification') metric = yardstick::metric_set(mn_log_loss)
+  if(mode == 'regression') metric = yardstick::metric_set(rmse)
+  #tg <- tune_grid(wf, resamples)
+  tg <- finetune::tune_race_anova(wf, resamples, metrics = metric, control = control, ...)
+  #pdf("Rplot.pdf"); finetune::plot_race(tg); dev.off()
+  #tg <- finetune::tune_sim_anneal(wf, resamples, iter = 20) # seems too slow
+  
+  return(list(
+    final_workflow = finalize_workflow(wf, select_best(tg)),
+    tune_result = tg
+  ))
 }
 
 
@@ -39,11 +48,9 @@ tune_wf <- function(wf, data, v = 5, ...){
 #' 
 #' @param ... args to be passed to tune_wf (e.g., v, grid) before fitting the workflow.
 #' @export
-#' @examples dontrun{
-#' #' library(tidymodels)
+#' @examples \dontrun{
+#' library(tidymodels)
 #' library(dplyr)
-#' data(cells, package = "modeldata")
-#' cells <- cells %>% select(-case)
 #' 
 #' train_data <- sim_data(setup = 'A', n = 300, p = 6, sigma = 1)$data
 #' 
@@ -69,7 +76,7 @@ tune_wf <- function(wf, data, v = 5, ...){
 #' }
 #' 
 #' ## Example using tune_wf explicitly
-#' tuned_wf <- tune_wf(wf, data = train_data)
+#' tuned_wf <- tune_wf(wf, data = train_data)$final_workflow
 #' fitted1 <- fit(tuned_wf, train_data)
 #' pred1 <- predict(fitted1, train_data, 'prob')
 #' 
@@ -99,7 +106,27 @@ fit.tuneflow <- function(object, data, ...) {
       data = data
     ), 
     object$tune_args
-  ))
+  ))$final_workflow
   stopifnot(class(tuned_wf) == 'workflow')
   fit(tuned_wf, data)
+}
+
+#' Generate subsamples for tuning
+#' 
+#' This function is useful for pre-tuning hyperparameters
+#' for samples of different sizes.
+#' 
+#' @export
+subsample <- function(data, n_analysis, times){
+  N <- nrow(data)
+  splits <- lapply(1:times, \(i){
+    in_id <- sample(N, n_analysis, replace = FALSE)
+    make_splits(list(
+      analysis = in_id, 
+      assessment = setdiff(1:N, in_id)
+    ), data = data)
+  })
+  manual_rset(splits, ids = paste(
+    'Subsample', 1:times
+  ))
 }
