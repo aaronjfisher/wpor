@@ -42,7 +42,7 @@ tune_wf <- function(
   if (verbose) message("Generating ", size, " parameter combinations")
 
   grid <- wf %>%
-    dials::parameters() %>%
+    hardhat::extract_parameter_set_dials() %>%
     dials::finalize(model.frame(form[-2], data)) %>%
     dials::grid_latin_hypercube(size = size)
   # dials::grid_max_entropy(size = size)

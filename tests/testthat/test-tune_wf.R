@@ -1,4 +1,4 @@
-test_that("weights are used in tune_wf, but not ", {
+test_that("weights are used in tune_wf, but not in standard tune::tune_grid", {
   library(tidymodels)
   library(dplyr)
 

@@ -7,10 +7,10 @@
 \usage{
 crossfit_nuisance(
   data,
-  outcome_obs_wf,
-  outcome_1_wf,
-  outcome_0_wf,
   treatment_wf,
+  outcome_obs_wf,
+  outcome_1_wf = outcome_obs_wf,
+  outcome_0_wf = outcome_obs_wf,
   min_prob = 0.01,
   v = 10,
   cf_order = 2,
