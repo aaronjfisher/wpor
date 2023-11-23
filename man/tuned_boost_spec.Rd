@@ -8,7 +8,7 @@ tuned_boost_spec(
   formula,
   mode,
   control = NULL,
-  data,
+  data = NULL,
   weights = NULL,
   fit_init = NULL
 )

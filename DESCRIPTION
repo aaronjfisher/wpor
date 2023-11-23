@@ -9,14 +9,16 @@ LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Imports:
-  dplyr,
-  finetune,
-  lme4,
-  parsnip,
-  pryr,
-  rsample,
-  tidyr,
-  tune
+    dplyr,
+    finetune,
+    generics,
+    lifecycle,
+    lme4,
+    parsnip,
+    pryr,
+    rsample,
+    tidyr,
+    tune
 VignetteBuilder: knitr
 Suggests: 
   parsnip,

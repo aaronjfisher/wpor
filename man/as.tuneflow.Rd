@@ -10,27 +10,43 @@ tune_wf(
   wf,
   data = NULL,
   v = 10,
+  size = 10,
   resamples = rsample::vfold_cv(data, v),
-  control = finetune::control_race(burn_in = 2),
-  ...
+  alpha = 0.05,
+  burnin = v,
+  verbose = TRUE,
+  save_performance = FALSE
 )
 
 as.tuneflow(wf, ...)
 
-\method{fit}{tuneflow}(object, data, ...)
+\method{fit}{tuneflow}(object, data)
 }
 \arguments{
 \item{wf}{a parsnip workflow}
 
 \item{data}{a dataset to train on}
 
-\item{v}{number of cv folds to use}
+\item{v}{number of cv folds to use in resamples}
 
-\item{...}{passed to fit.workflow (e.g., weights)}
+\item{size}{number of param sets to evaluate}
+
+\item{resamples}{used to evaluate wf}
+
+\item{burnin}{how many folds to examine before discarding
+poorly performing parameter sets}
+
+\item{save_performance}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} save performance
+metrics as an attribute. If using as.tuneflow, this attribute
+will also be saved in the final, fitted workflow.}
+
+\item{...}{args to be passed to tune_wf (e.g., v, grid) before fitting the workflow.}
 }
 \description{
 \code{tune_wf}, \code{as.tuneflow} and \code{fit.tuneflow} are convenience functions
 for tuning a workflow.
+
+fit.tuneflow returns a tuned, fitted workflow.
 }
 \details{
 \code{tune_wf} finalizes a workflow using \code{finetune::tune_race_anova},
@@ -50,6 +66,7 @@ and then applies \code{fit.workflow} to fit the finalized workflow.
 library(tidymodels)
 library(dplyr)
 
+set.seed(0)
 train_data <- sim_data(setup = 'A', n = 300, p = 6, sigma = 1)$data
 
 x_terms <- train_data \%>\%
@@ -74,14 +91,16 @@ if(FALSE){
 }
 
 ## Example using tune_wf explicitly
-tuned_wf <- tune_wf(wf, data = train_data)$final_workflow
+set.seed(0)
+tuned_wf <- tune_wf(wf, data = train_data)
 fitted1 <- fit(tuned_wf, train_data)
 pred1 <- predict(fitted1, train_data, 'prob')
 
 ## Example using tune_wf implicitly
+set.seed(0)
 fitted2 <- as.tuneflow(wf) \%>\% 
   wpor::fit(train_data)
-pred2 <- predict(fitted1, train_data, 'prob')
+pred2 <- predict(fitted2, train_data, 'prob')
 
 range(pred1 - pred2) #equivalent results
 }

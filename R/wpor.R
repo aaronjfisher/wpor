@@ -230,12 +230,19 @@ fit_wpor <- function(data,
   ) %>%
     select(-outcome, -treatment)
 
-
   if ("workflow" %in% class(effect_wf)) {
     fitted <- effect_wf %>%
       workflows::add_case_weights(.weights) %>%
       fit(dat_effect)
+  } else  if  ("tuneflow" %in% class(effect_wf)){
+    effect_wf$workflow <- effect_wf$workflow %>%
+      workflows::add_case_weights(.weights)
+    fitted <- fit(effect_wf, dat_effect)
   } else {
+    fit_fun_char <- paste0('fit.', class(effect_wf)[1])
+    if(!'weights' %in% formalArgs(fit_fun_char)){
+      stop('weights must be an argument for ', fit_fun_char)
+    }
     wts_merged <- as.numeric(dat_effect$.weights)
     fitted <- select(dat_effect, -.weights) %>%
       fit(effect_wf, data = ., weights = wts_merged)
