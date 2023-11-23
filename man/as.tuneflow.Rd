@@ -13,7 +13,7 @@ tune_wf(
   size = 10,
   resamples = rsample::vfold_cv(data, v),
   alpha = 0.05,
-  burnin = v,
+  burnin = length(resamples$splits),
   verbose = TRUE,
   save_performance = FALSE
 )
@@ -27,11 +27,11 @@ as.tuneflow(wf, ...)
 
 \item{data}{a dataset to train on}
 
-\item{v}{number of cv folds to use in resamples}
+\item{v}{number of cv folds to use in resamples; overwritten by resamples, if provided.}
 
 \item{size}{number of param sets to evaluate}
 
-\item{resamples}{used to evaluate wf}
+\item{resamples}{An ‘rset()’ object object used to evaluate wf}
 
 \item{burnin}{how many folds to examine before discarding
 poorly performing parameter sets}
@@ -67,11 +67,11 @@ library(tidymodels)
 library(dplyr)
 
 set.seed(0)
-train_data <- sim_data(setup = 'A', n = 300, p = 6, sigma = 1)$data
+train_data <- sim_data(setup = "A", n = 300, p = 6, sigma = 1)$data
 
 x_terms <- train_data \%>\%
   select(starts_with("x.")) \%>\%
-  colnames
+  colnames()
 rhs <- paste(x_terms, collapse = " + ")
 treatment_formula <- formula(paste("treatment ~", rhs))
 
@@ -82,7 +82,7 @@ wf <- workflow() \%>\%
   add_model(set_mode(mod_spec, "classification")) \%>\%
   add_formula(treatment_formula)
 
-if(FALSE){
+if (FALSE) {
   # Optionally, the tuning process can be parallelized by first
   # registering a cluster.
   cores <- parallel::detectCores(logical = FALSE)
@@ -94,14 +94,14 @@ if(FALSE){
 set.seed(0)
 tuned_wf <- tune_wf(wf, data = train_data)
 fitted1 <- fit(tuned_wf, train_data)
-pred1 <- predict(fitted1, train_data, 'prob')
+pred1 <- predict(fitted1, train_data, "prob")
 
 ## Example using tune_wf implicitly
 set.seed(0)
-fitted2 <- as.tuneflow(wf) \%>\% 
+fitted2 <- as.tuneflow(wf) \%>\%
   wpor::fit(train_data)
-pred2 <- predict(fitted2, train_data, 'prob')
+pred2 <- predict(fitted2, train_data, "prob")
 
-range(pred1 - pred2) #equivalent results
+range(pred1 - pred2) # equivalent results
 }
 }

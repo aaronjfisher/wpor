@@ -1,4 +1,3 @@
-
 #' @importFrom generics fit
 #' @export
 generics::fit
@@ -92,8 +91,8 @@ tuned_boost_spec <- function(
   init_spec <- cvboost_spec(
     formula = formula, mode = mode, control = control
   )
-  if(is.null(fit_init)){
-    if(is.null(data)) stop('Either data or fit_init must be provided.')
+  if (is.null(fit_init)) {
+    if (is.null(data)) stop("Either data or fit_init must be provided.")
     fit_init <- fit(init_spec, data, weights = weights)
   }
   init_spec$param <- fit_init$param

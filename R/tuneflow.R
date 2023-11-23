@@ -3,9 +3,9 @@
 #'
 #' @param wf a parsnip workflow
 #' @param data a dataset to train on
-#' @param v number of cv folds to use in resamples
+#' @param v number of cv folds to use in resamples; overwritten by resamples, if provided.
 #' @param size number of param sets to evaluate
-#' @param resamples used to evaluate wf
+#' @param resamples An ‘rset()’ object object used to evaluate wf
 #' @param burnin how many folds to examine before discarding 
 #' poorly performing parameter sets
 #' @param save_performance `r lifecycle::badge('experimental')` save performance
@@ -19,10 +19,11 @@ tune_wf <- function(
     size = 10,
     resamples = rsample::vfold_cv(data, v), 
     alpha = 0.05,
-    burnin = v,
+    burnin = length(resamples$splits),
     verbose = TRUE,
     save_performance = FALSE
 ){
+  v <- length(resamples$splits)
   stopifnot(burnin <= v)
   stopifnot(burnin >= 2)
   
@@ -41,12 +42,12 @@ tune_wf <- function(
   truth_lab <- as.character(form[[2]])
   
   if(verbose) message('Generating ', size, ' parameter combinations')
-  #grid <- dials::grid_max_entropy(wf, size = size)
-
+  
   grid <- wf %>% 
-    parameters() %>% 
-    finalize(model.frame(form[-2], data)) %>%
+    dials::parameters() %>% 
+    dials::finalize(model.frame(form[-2], data)) %>%
     dials::grid_latin_hypercube(size = size)
+    #dials::grid_max_entropy(size = size)
   performance <- matrix(NA, v, size)
   skip_ind <- rep(FALSE, size)
   for(i in 1:v){
