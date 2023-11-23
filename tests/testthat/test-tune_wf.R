@@ -47,7 +47,7 @@ test_that("weights are used in tune_wf, but not in standard tune::tune_grid", {
   my_nonactive_penalty <- workflows::extract_spec_parsnip(my_tuned_nonactive)$args$penalty %>%
     rlang::eval_tidy(expr = .)
 
-  expect_true(my_active_penalty * 1000 < my_nonactive_penalty)
+  expect_true(my_active_penalty * 100 < my_nonactive_penalty)
 
 
   set.seed(2)

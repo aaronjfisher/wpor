@@ -19,7 +19,7 @@ tune_wf <- function(
     resamples = rsample::vfold_cv(data, v),
     alpha = 0.05,
     burnin = length(resamples$splits),
-    verbose = TRUE,
+    verbose = FALSE,
     save_performance = FALSE) {
   v <- length(resamples$splits)
   stopifnot(burnin <= v)
@@ -54,7 +54,7 @@ tune_wf <- function(
     for (j in 1:size) {
       if (skip_ind[j]) next
       if (verbose) message("par:", j, ", ", appendLF = FALSE)
-      wfj <- finalize_workflow(wf, grid[j, ])
+      wfj <- fast_finalize_workflow(wf, grid[j, ])
       fit_ij <- fit(wfj, data = analysis(ri))
       pred_ij <- predict(fit_ij, assessment(ri), type = type)
 
@@ -65,10 +65,6 @@ tune_wf <- function(
       )
 
       rm(wfj, pred_ij, fit_ij)
-      gc() # strangely, this seems to be required to avoid memory issues associated with tidymodels
-      # absent this gc command, we get errors such as ` *** caught segfault ***; address 0x4a145d5, cause 'memory not mapped'`
-      # TO DO: At some point, try removing gc statement again to see if other changes had remedied it?
-      # Be sure to test for size ~= 100.
     }
 
     # Check which params to skip
@@ -94,7 +90,7 @@ tune_wf <- function(
   if (verbose) message("\n")
   # matplot(apply(performance, 2, cummean), type = 'l')
 
-  out <- finalize_workflow(wf, grid[current_best, ])
+  out <- fast_finalize_workflow(wf, grid[current_best, ], workcheck = TRUE)
   if (save_performance) {
     lifecycle::signal_stage("experimental", "plot.workflow(save_performance = 'TRUE')")
     attributes(out)[["tune_results"]] <- list(
@@ -104,6 +100,24 @@ tune_wf <- function(
   }
 
   return(out)
+}
+
+
+fast_finalize_workflow <- function(x, par, workcheck = FALSE){
+  parsnip::check_final_param(par)
+  spec <- x$fit$actions$model$spec
+  new_spec <- rlang::exec(update, object = spec, !!!par)
+  x$fit$actions$model$spec <- new_spec
+
+  if(workcheck){
+    x2 <- tune::finalize_workflow(x, par)
+    if(!identical(x, x2)){
+      stop('workcheck for fast_finalize_workflow failed; 
+        check package update.packagesor revert to tune::finalize_workflow')
+    }
+  }
+
+  return(x)
 }
 
 #' @export
