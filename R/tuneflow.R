@@ -39,7 +39,7 @@ tune_wf <- function(
   stopifnot("formula" %in% class(form))
   truth_lab <- as.character(form[[2]])
 
-  if (verbose) message("Generating ", size, " parameter combinations")
+  if (verbose) message("Generating ", size, " parameter combinations", appendLF = FALSE)
 
   grid <- wf %>%
     hardhat::extract_parameter_set_dials() %>%
@@ -50,10 +50,15 @@ tune_wf <- function(
   skip_ind <- rep(FALSE, size)
   for (i in 1:v) {
     ri <- get_rsplit(resamples, i)
-    if (verbose) message("\n\nFitting Fold-", i, ": studying ", sum(!skip_ind), "/", length(skip_ind), " parameter combinations")
+    if (verbose){
+      message(
+        "\nFold", i, 
+        ifelse(burnin == v, '', paste0('(running ', sum(1-skip_ind),'/',size,' param sets)')),
+        ": ", appendLF = FALSE)
+    }
     for (j in 1:size) {
       if (skip_ind[j]) next
-      if (verbose) message("par:", j, ", ", appendLF = FALSE)
+      if (verbose) message(".", appendLF = FALSE)
       wfj <- fast_finalize_workflow(wf, grid[j, ])
       fit_ij <- fit(wfj, data = analysis(ri))
       pred_ij <- predict(fit_ij, assessment(ri), type = type)
@@ -65,7 +70,16 @@ tune_wf <- function(
       )
 
       rm(wfj, pred_ij, fit_ij)
+      if(extract_spec_parsnip(wf)$engine == 'xgboost'){
+         gc() 
+         Sys.sleep(1)  
+         #!! Strangely, this seems to prevent the program from crashing as often,
+         #at least when running on a cluster. In the future, consider tests removing this gc call.
+         #it doesn't solve it completely, but it makes it possible.
+      }
     }
+    if(verbose) message(cli::symbol[['tick']], appendLF = FALSE)
+    
 
     # Check which params to skip
     current_best <- which(
@@ -82,12 +96,12 @@ tune_wf <- function(
       }
     }
     if (sum(!skip_ind) == 1) {
-      if (verbose) message("\n\nStopping Early; 1 candidate left.\n")
+      if (verbose & i<v) message("\nStopping Early; 1 candidate left.", appendLF = FALSE)
       break
     }
   }
 
-  if (verbose) message("\n")
+  if (verbose) message("\n", appendLF = FALSE)
   # matplot(apply(performance, 2, cummean), type = 'l')
 
   out <- fast_finalize_workflow(wf, grid[current_best, ], workcheck = TRUE)
