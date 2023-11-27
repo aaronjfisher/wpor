@@ -14,7 +14,7 @@ tune_wf(
   resamples = rsample::vfold_cv(data, v),
   alpha = 0.05,
   burnin = length(resamples$splits),
-  verbose = TRUE,
+  verbose = FALSE,
   save_performance = FALSE
 )
 

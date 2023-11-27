@@ -59,7 +59,7 @@ tune_wf <- function(
     for (j in 1:size) {
       if (skip_ind[j]) next
       if (verbose) message(".", appendLF = FALSE)
-      wfj <- fast_finalize_workflow(wf, grid[j, ])
+      wfj <- fast_finalize_workflow(wf, grid[j, ], workcheck = (i == 1 & j == 1))
       fit_ij <- fit(wfj, data = analysis(ri))
       pred_ij <- predict(fit_ij, assessment(ri), type = type)
 
@@ -117,17 +117,17 @@ tune_wf <- function(
 }
 
 
-fast_finalize_workflow <- function(x, par, workcheck = FALSE){
+fast_finalize_workflow <- function(x, par, workcheck = FALSE) {
   parsnip::check_final_param(par)
   spec <- x$fit$actions$model$spec
   new_spec <- rlang::exec(update, object = spec, !!!par)
   x$fit$actions$model$spec <- new_spec
 
-  if(workcheck){
+  if (workcheck) {
     x2 <- tune::finalize_workflow(x, par)
-    if(!identical(x, x2)){
-      stop('workcheck for fast_finalize_workflow failed; 
-        check package update.packagesor revert to tune::finalize_workflow')
+    if (!identical(x, x2)) {
+      stop("workcheck for fast_finalize_workflow failed;
+        check package update.packagesor revert to tune::finalize_workflow")
     }
   }
 
