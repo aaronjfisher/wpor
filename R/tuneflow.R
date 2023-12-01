@@ -184,7 +184,12 @@ metric_mse <- function(pred, truth, weights = rep(1, length(truth))) {
   mean(weights * (pred$.pred - truth)^2)
 }
 
-metric_neg_log_lik <- function(pred, truth, weights = rep(1, length(truth))) {
+metric_neg_log_lik <- function(
+    pred, 
+    truth, 
+    weights = rep(1, length(truth)),
+    upper_lim = 100
+    ) {
   if (is.null(pred$.pred_0)) {
     pred$.pred_0 <- 1 - pred$.pred_1
   }
@@ -192,7 +197,8 @@ metric_neg_log_lik <- function(pred, truth, weights = rep(1, length(truth))) {
     pred$.pred_1 <- 1 - pred$.pred_0
   }
   weights <- as.numeric(weights)
-  -mean(weights * (truth == 1) * log(pred$.pred_1) + weights * (truth == 0) * log(1 - pred$.pred_0))
+  losses <- -log(ifelse(truth == 1, pred$.pred_1, pred$.pred_0))
+  mean(weights * pmin(upper_lim, losses))
 }
 
 #' Create a tuneflow: a workflow with instructions for tuning.
