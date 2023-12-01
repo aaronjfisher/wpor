@@ -87,9 +87,9 @@ check_dat <- function(data) {
 crossfit_nuisance <- function(
     data,
     treatment_wf,
-    outcome_obs_wf, 
-    outcome_1_wf = outcome_obs_wf, 
-    outcome_0_wf = outcome_obs_wf, 
+    outcome_obs_wf,
+    outcome_1_wf = outcome_obs_wf,
+    outcome_0_wf = outcome_obs_wf,
     min_prob = 0.01,
     v = 10,
     cf_order = 2,
