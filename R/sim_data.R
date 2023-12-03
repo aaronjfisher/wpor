@@ -67,12 +67,24 @@ sim_data <- function(setup, n, p, sigma) {
   outcome <- params$b + (treatment_num - 0.5) * params$tau + sigma * rnorm(n)
   colnames(outcome) <- NULL
 
+  train_data <- data.frame(
+    outcome = outcome,
+    treatment = treatment_factor,
+    x = params$X
+  )
+
+  x_terms <- train_data %>%
+    dplyr::select(dplyr::starts_with("x.")) %>%
+    colnames()
+  rhs <- paste(x_terms, collapse = " + ")
+
   list(
-    data = data.frame(
-      outcome = outcome,
-      treatment = treatment_factor,
-      x = params$X
-    ),
-    params = params
+    data = train_data,
+    params = params,
+    formulas = list(
+      outcome = formula(paste("outcome ~", rhs)),
+      treatment = formula(paste("treatment ~", rhs)),
+      effect = formula(paste("pseudo ~", rhs))
+    )
   )
 }

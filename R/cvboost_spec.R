@@ -20,18 +20,6 @@ cvboost_spec <- function(formula, mode, control = NULL) {
     add_class("cvboost_spec")
 }
 
-get_x <- function(spec, data) {
-  formula_x <- spec$formula[-2] # remove LHS
-  model.matrix(formula_x, data = data)
-}
-get_y <- function(spec, data) {
-  y <- model.frame(spec$formula, data = data)[[1]]
-  if (spec$mode == "classification") {
-    stopifnot(all(y %in% 0:1))
-    y <- as.numeric(y == 1)
-  }
-  y
-}
 
 #' Fit a cvboost model based on a specification
 #' @export
@@ -71,10 +59,10 @@ predict.cvboost_fit <- function(object, new_data) {
 
 postprocess_response <- function(spec, response) {
   if (spec$mode == "regression") {
-    return(tibble(.pred = response))
+    return(tibble::tibble(.pred = response))
   }
   if (spec$mode == "classification") {
-    return(tibble(
+    return(tibble::tibble(
       .pred_0 = 1 - response,
       .pred_1 = response
     ))

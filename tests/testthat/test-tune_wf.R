@@ -1,4 +1,3 @@
-
 # Create a dataset where x only matters in an "active" subgroup
 # Weighting the active group should produce a small penalty
 # Weighting the non-active group should produce a large penalty
@@ -28,7 +27,7 @@ test_that("weights are used in tune_wf for lasso, but not in standard tune::tune
   library(tidymodels)
   library(dplyr)
 
-  
+
   wf_unweighted <- workflow() %>%
     add_model(linear_reg(
       penalty = tune(),
@@ -73,7 +72,7 @@ test_that("weights are used in tune_wf for lasso, but not in standard tune::tune
 
 test_that("xgboost (parsnip) fit uses weights", {
   wf_unweighted <- workflow() %>%
-    add_model(boost_tree(engine = "xgboost", mode="regression")) %>%
+    add_model(boost_tree(engine = "xgboost", mode = "regression")) %>%
     add_formula(y ~ .)
 
   wf_active <- wf_unweighted %>%
@@ -84,7 +83,7 @@ test_that("xgboost (parsnip) fit uses weights", {
   fitted_active <- fit(wf_active, data = train)
   fitted_nonactive <- fit(wf_nonactive, data = train)
 
-  train_active <- filter(train, active==1)
+  train_active <- filter(train, active == 1)
   pred_active_from_active <- predict(fitted_active, train_active)
   pred_active_from_nonactive <- predict(fitted_nonactive, train_active)
   error_right_weights <- mean((pred_active_from_active$.pred - train_active$y)^2)
