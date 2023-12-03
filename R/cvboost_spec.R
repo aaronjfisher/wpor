@@ -1,7 +1,6 @@
+#' @importFrom generics fit
 #' @export
-fit <- function(...) UseMethod("fit")
-fit.default <- function(object, ...) parsnip::fit(object, ...)
-## see https://rstudio.github.io/r-manuals/r-exts/Generic-functions-and-methods.html
+generics::fit
 
 add_class <- function(obj, class_name) {
   class(obj) <- c(class_name, class(obj))
@@ -87,12 +86,17 @@ postprocess_response <- function(spec, response) {
 #' @export
 tuned_boost_spec <- function(
     formula, mode, control = NULL,
-    data, weights = NULL) {
+    data = NULL, weights = NULL,
+    fit_init = NULL) {
   init_spec <- cvboost_spec(
     formula = formula, mode = mode, control = control
   )
-  fit_init <- fit(init_spec, data, weights = weights)
-  init_spec$fit_init <- fit_init
+  if (is.null(fit_init)) {
+    if (is.null(data)) stop("Either data or fit_init must be provided.")
+    fit_init <- fit(init_spec, data, weights = weights)
+  }
+  init_spec$param <- fit_init$param
+  init_spec$nrounds <- fit_init$nrounds
 
   out <- init_spec %>%
     rm_class("cvboost_spec") %>%
@@ -110,8 +114,8 @@ fit.tuned_boost_spec <- function(object, data, weights = NULL) {
   )
   xgb_model <- xgboost::xgb.train(
     data = DMatrix,
-    params = object$fit_init$param,
-    nrounds = object$fit_init$nrounds,
+    params = object$param,
+    nrounds = object$nrounds,
     nthread = 1
   )
   list(

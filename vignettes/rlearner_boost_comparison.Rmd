@@ -76,7 +76,7 @@ effect_wf
 ```{r fit_wpor}
 nuisance_tbl <- crossfit_nuisance(
   data = train_data,
-  outcome_wf = outcome_wf,
+  outcome_obs_wf = outcome_wf,
   treatment_wf = treatment_wf,
   min_prob = 0.01,
   v = 5,

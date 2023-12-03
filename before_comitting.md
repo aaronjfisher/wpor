@@ -10,7 +10,7 @@ devtools::document()
 system.time({
 	no_errors <- FALSE
 	devtools::run_examples()
-	#devtools::test()
+	devtools::test()
 	devtools::build_vignettes()
 	no_errors <- TRUE
 })

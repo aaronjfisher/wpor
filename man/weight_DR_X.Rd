@@ -4,6 +4,7 @@
 \alias{weight_DR_X}
 \alias{weight_U_X}
 \alias{weight_DR_AX}
+\alias{weight_DR_alt_AX}
 \alias{weight_U_AX}
 \alias{weight_1}
 \title{Weighting functions}
@@ -13,6 +14,8 @@ weight_DR_X(.pred_treatment, .pred_control)
 weight_U_X(treatment, .pred_treatment, .pred_control)
 
 weight_DR_AX(treatment, .pred_treatment, .pred_control)
+
+weight_DR_alt_AX(treatment, .pred_treatment, .pred_control)
 
 weight_U_AX(treatment, .pred_treatment)
 

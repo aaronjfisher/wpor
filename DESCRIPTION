@@ -1,6 +1,6 @@
 Package: wpor
 Title: Weighted pseudo-outcome regression
-Version: 0.0.0.9000
+Version: 0.0.1
 Authors: Aaron Fisher
 Description: What the package does (one paragraph).
 License: Apache
@@ -10,9 +10,14 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Imports:
   dplyr,
+  finetune,
+  generics,
+  lifecycle,
+  lme4,
   parsnip,
   pryr,
   rsample,
+  tidyr,
   tune
 VignetteBuilder: knitr
 Suggests: 
