@@ -44,7 +44,7 @@ gbm_grid <- lightgbm_grid(30)
 
 tuned_gbm <- tune_params(
   gbm,
-  gbm_grid,
+  grid = gbm_grid,
   metric = NULL,
   resamples = rsample::vfold_cv(tdata, 10),
   alpha = 0.05,
@@ -74,6 +74,7 @@ wf <- workflow() %>%
   add_model(set_mode(mod_spec, "classification")) %>%
   add_formula(training$formulas$treatment)
 
+  
 tuned_wf <- tune_params(
   wf,
   metric = NULL,

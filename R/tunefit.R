@@ -38,7 +38,7 @@ tune_params <- function(
     if (!"workflow" %in% class(trainer)) {
       stop("if trainer is not a workflow, a grid must be explicitly specified.")
     }
-    form <- pull_workflow_preprocessor(trainer)
+    form <- extract_preprocessor(trainer)
     stopifnot(class(form) == "formula")
     grid <- trainer %>%
       hardhat::extract_parameter_set_dials() %>%
