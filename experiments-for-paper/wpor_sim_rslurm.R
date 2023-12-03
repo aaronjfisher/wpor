@@ -6,7 +6,7 @@ size = 10
 alpha = 0.05
 v = 10
 burnin = 3
-nsim <- 200
+nsim <- 50
 
 #tuned_df <- readRDS('pretune_results.rds')
 tuned_df <- NULL
@@ -18,23 +18,15 @@ include_rlearner_comparison <- NULL
 
 simultaneous <- 90
 
-nodes <- nrow(results_tbl)
 #(job_path <- paste0(Sys.Date(),'_pretuned_parsnip_and_cv_', nsim))
 (job_path <- paste0(Sys.Date(),'_active-tune_', nsim))
 #(job_path <- paste0(Sys.Date(),'_crossfit_test_', nsim))
 (slurm_dir <- paste0('_rslurm_', gsub('-','', job_path),'/'))
 
 
-if(!dir.exists('sbatch-array')){
-  dir.create('sbatch-array')
-  writeLines(con = 'sbatch-array/.gitignore', text = c(
-    '*.out',
-    '*.rds',
-    '*.txt'))
-}
 
 results_tbl <- expand.grid(
-  learners = c('parsnip_boost','cvboost'), #'parsnip_random_forest', 'cvboost' 'parsnip_boost'
+  learners = c('lightgbm'), #'parsnip_random_forest', 'cvboost' 'parsnip_boost', 'lightgbm'
   n_obs = c(250,500,1000),#, 1000, 250
   p = 6,#c(6,12),
   sigma = 1,#c(0.5, 1, 2),#, 3),
@@ -52,6 +44,7 @@ results_tbl <- expand.grid(
   tibble() %>%
   mutate(id = 1:n())
 results_tbl$mse <- vector('list', nrow(results_tbl))
+nodes <- nrow(results_tbl)
 
 
 mse_NA <- expand.grid(

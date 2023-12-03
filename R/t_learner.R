@@ -12,9 +12,6 @@ t_learner <- function(data, outcome_0_wf, outcome_1_wf = outcome_0_wf) {
 
 #' @export
 predict.t_learner <- function(object, new_data) {
-  tibble(
-    .pred =
-      predict(object$fit1, new_data)$.pred -
-        predict(object$fit0, new_data)$.pred
-  )
+  predict_expected_value(object$fit1, new_data) -
+    predict_expected_value(object$fit0, new_data)
 }

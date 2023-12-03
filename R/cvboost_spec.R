@@ -51,10 +51,9 @@ fit.cvboost_spec <- function(object, data, weights = NULL) {
 #' @export
 predict.cvboost_fit <- function(object, new_data) {
   newx_mat <- get_x(object$spec, new_data)
-  response <- predict(
+  predict(
     object = object$fitted, newx = newx_mat
   )
-  postprocess_response(object$spec, response)
 }
 
 postprocess_response <- function(spec, response) {
@@ -115,9 +114,8 @@ fit.tuned_boost_spec <- function(object, data, weights = NULL) {
 
 #' @export
 predict.tuned_boost_fit <- function(object, new_data) {
-  response <- predict(
+  predict(
     object$fitted,
     newdata = get_x(object$spec, new_data)
   )
-  postprocess_response(object$spec, response)
 }

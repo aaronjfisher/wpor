@@ -119,21 +119,42 @@ simulate_from_df <- function(
       treatment_wf <- (workflow() %>%
                          add_model(set_mode(mod_spec, "classification")) %>%
                          add_formula(treatment_formula) %>%
-                         tune_wf(train_data, verbose = verbose, size = size, ...))
+                         tune_params(data = train_data, verbose = verbose, size = size, ...))
       out_wf <- workflow() %>%
         add_model(set_mode(mod_spec, "regression")) %>%
         add_formula(outcome_formula)
       if(verbose) message(Sys.time(),': ','tuning outcome 0...')
-      outcome_0_wf <- tune_wf(out_wf, filter(train_data, treatment == 0),verbose = verbose, size = size, ...)
+      outcome_0_wf <- tune_params(out_wf, data = filter(train_data, treatment == 0),verbose = verbose, size = size, ...)
       if(verbose) message(Sys.time(),': ','tuning outcome 1...')
-      outcome_1_wf <- tune_wf(out_wf, filter(train_data, treatment == 1),verbose = verbose, size = size, ...)
+      outcome_1_wf <- tune_params(out_wf, data = filter(train_data, treatment == 1),verbose = verbose, size = size, ...)
       if(verbose) message(Sys.time(),': ','tuning outcome obs...')
-      outcome_obs_wf <- tune_wf(out_wf, train_data, verbose = verbose, size = size, ...)
+      outcome_obs_wf <- tune_params(out_wf, data = train_data, verbose = verbose, size = size, ...)
       effect_wf <- workflow() %>%
         add_model(set_mode(mod_spec, "regression")) %>%
         add_formula(effect_formula) %>%
-        as.tuneflow(verbose = verbose, size = size, ...)
+        as.tunefit(verbose = verbose, size = size, ...)
+
+    } else if(sim_df$learners[i] == c('lightgbm')){
+
+      if(verbose) message(Sys.time(),': ','tuning treatment...')
+      tune_gbm <- function(...){
+        tune_params(verbose = verbose, grid = lightgbm_grid(size), ...)
+      }
+      treatment_wf <- lightgbm_spec(formula = treatment_formula, mode = "classification") %>%
+        tune_gbm(data = train_data, ...)
+
+      out_wf <- lightgbm_spec(formula = outcome_formula, mode = "regression")
+      if(verbose) message(Sys.time(),': ','tuning outcome 0...')
+      outcome_0_wf <- tune_gbm(out_wf, data = filter(train_data, treatment == 0), ...)
+      if(verbose) message(Sys.time(),': ','tuning outcome 1...')
+      outcome_1_wf <- tune_gbm(out_wf, data = filter(train_data, treatment == 1), ...)
+      if(verbose) message(Sys.time(),': ','tuning outcome obs...')
+      outcome_obs_wf <- tune_gbm(out_wf, data = train_data, ...)
+      effect_wf <- lightgbm_spec(formula = effect_formula, mode = "regression") %>%
+        as.tunefit(verbose = verbose, size = size, grid = lightgbm_grid(size), ...)
+
     } else if(sim_df$learners[i]=='cvboost'){
+
       if(verbose) message(Sys.time(),': ','tuning treatment...')
       treatment_wf <- tuned_boost_spec(
         treatment_formula,
@@ -278,9 +299,10 @@ simulate_from_df <- function(
       if(mse_i$pseudo[j] == 'rlearner_package'){
         pred <- predict(fitted_j, as.matrix(test_data[,x_terms]))
       } else {
-        pred <- predict(fitted_j, test_data)$.pred
+        pred <- predict_expected_value(fitted_j, test_data)
       }
       mse_i$mse[j] <- mean( ( pred - test_list$params$tau )^2 )
+      if(is.na(mse_i$mse[j]))browser()#!!!
       
     }
     stopifnot(all(dim(mse_NA) == dim(mse_i)))

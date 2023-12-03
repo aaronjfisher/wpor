@@ -8,9 +8,9 @@
 \usage{
 tune_params(
   trainer,
+  data = NULL,
   grid = NULL,
   metric = NULL,
-  data = NULL,
   v = 10,
   resamples = rsample::vfold_cv(data, v),
   alpha = 0.05,
@@ -68,25 +68,19 @@ to finalize the workflow, using the stored arguments from \code{as.tunefit},
 and then applies \code{fit.workflow} to fit the finalized workflow.
 }
 \examples{
-\dontrun{
 library(tidymodels)
 library(dplyr)
 
 set.seed(0)
-train_data <- sim_data(setup = "A", n = 300, p = 6, sigma = 1)$data
-
-x_terms <- train_data \%>\%
-  select(starts_with("x.")) \%>\%
-  colnames()
-rhs <- paste(x_terms, collapse = " + ")
-treatment_formula <- formula(paste("treatment ~", rhs))
+training <- sim_data(setup = "A", n = 300, p = 6, sigma = 1)
+training$data <- sim_data(setup = "A", n = 300, p = 6, sigma = 1)$data
 
 mod_spec <- boost_tree(min_n = tune(), learn_rate = tune()) \%>\%
   set_engine("xgboost")
 
 wf <- workflow() \%>\%
   add_model(set_mode(mod_spec, "classification")) \%>\%
-  add_formula(treatment_formula)
+  add_formula(training$formulas$treatment)
 
 if (FALSE) {
   # Optionally, the tuning process can be parallelized by first
@@ -98,16 +92,15 @@ if (FALSE) {
 
 ## Example using tune_params explicitly
 set.seed(0)
-tuned_wf <- tune_params(wf, data = train_data)
-fitted1 <- fit(tuned_wf, train_data)
-pred1 <- predict(fitted1, train_data, "prob")
+tuned_wf <- tune_params(wf, data = training$data, size = 2) # setting size artificially small for example
+fitted1 <- fit(tuned_wf, training$data)
+pred1 <- predict(fitted1, training$data, "prob")
 
 ## Example using tune_params implicitly
 set.seed(0)
-fitted2 <- as.tunefit(wf) \%>\%
-  wpor::fit(train_data)
-pred2 <- predict(fitted2, train_data, "prob")
+fitted2 <- as.tunefit(wf, size = 2) \%>\%
+  wpor::fit(training$data)
+pred2 <- predict(fitted2, training$data, "prob")
 
-range(pred1 - pred2) # equivalent results
-}
+testthat::expect_equal(pred1, pred2)
 }

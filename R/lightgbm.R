@@ -92,7 +92,5 @@ fit.lightgbm_spec <- function(object, data, verbose = -1, ...) {
 predict.lightgbm_fit <- function(object, new_data) {
   stopifnot(is.data.frame(new_data))
   newx <- get_x(object$spec, new_data)
-  response <- predict(object$fit, newx)
-  postprocess_response(object$spec, response)
-  # response
+  predict(object$fit, newx)
 }

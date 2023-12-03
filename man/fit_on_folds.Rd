@@ -8,7 +8,10 @@ fit_on_folds(object, rset)
 }
 \arguments{
 \item{object}{must have a fit method, which returns an object with a
-predict method; which returns a tibble with .pred or .pred_1 and .pred_0}
+predict method; which returns a vector of expected values for the predicted outcome.
+If the object's predict method returns output in a different format
+(e.g., a fitted parsnip model), then the user must define a
+\code{predict_expected_value} method.}
 
 \item{rset}{e.g., the output of vfold_cv
 This function is based on tune::fit_resamples, but it is not a generic.

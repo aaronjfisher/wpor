@@ -13,35 +13,14 @@ crossfit <- function(wf, rset) {
     rename(.fold_id = id)
 }
 
-#' A wrapper for predict that changes handling of default types for workflow
-#'
-#' The default `type` for prediction for mode = classification
-#' in parsnip is to output predicted classes.
-#' This changes that default to 'prob', which
-#' produces a tibble of probabilities for each class.
-#'
-#' For regression modes in tidymodels, or for user defined
-#' model object classes, `predict_prob` defaults to `predict`.
-predict_prob <- function(object, ...) {
-  mode <- "custom"
-  if ("workflow" %in% class(object)) {
-    mode <- pull_workflow_spec(object)$mode
-  }
-  if ("model_spec" %in% class(object)) {
-    mode <- object$mode
-  }
-
-  if (mode == "classification") {
-    return(predict(object, type = "prob", ...))
-  } else {
-    return(predict(object, ...))
-  }
-}
 
 
 #' Fit workflow or object on resampled folds
 #' @param object must have a fit method, which returns an object with a
-#' predict method; which returns a tibble with .pred or .pred_1 and .pred_0
+#' predict method; which returns a vector of expected values for the predicted outcome.
+#' If the object's predict method returns output in a different format
+#' (e.g., a fitted parsnip model), then the user must define a
+#' `predict_expected_value` method.
 #' @param rset e.g., the output of vfold_cv
 #' This function is based on tune::fit_resamples, but it is not a generic.
 #' Thus, for custom fitting procedures that are not workflows,
@@ -54,10 +33,12 @@ fit_on_folds <- function(object, rset) {
     mutate(predictions = lapply(
       rset$splits, \(s){
         mod <- fit(object, analysis(s))
-        pred <- predict_prob(mod, new_data = assessment(s))
+        pred <- predict_expected_value(mod, new_data = assessment(s))
         ## validate_pred(pred)
-        pred$.row <- assessment(s)$.row
-        pred
+        tibble::tibble(
+          .row = assessment(s)$.row,
+          .pred = pred
+        )
       }
     )) %>%
     select(-splits) %>%
@@ -110,10 +91,9 @@ crossfit_nuisance <- function(
   # lobstr::obj_size(folds_train_1)
   # lobstr::obj_size(folds_all)
   # lobstr::obj_size(data)
-
   if (verbose) message("Cross fitting treatment model")
   E_treatment_tbl <- fit_on_folds(treatment_wf, folds_all) %>%
-    mutate(.pred_treatment = ptrim(.pred_1, min_prob, 1 - min_prob)) %>%
+    mutate(.pred_treatment = ptrim(.pred, min_prob, 1 - min_prob)) %>%
     select(.row, .fold_id, .pred_treatment)
 
   if (verbose) message("Cross fitting outcome model")
@@ -233,24 +213,11 @@ fit_wpor <- function(data,
   ) %>%
     select(-outcome, -treatment)
 
-  if ("workflow" %in% class(effect_wf)) {
-    fitted <- effect_wf %>%
-      workflows::add_case_weights(.weights) %>%
-      fit(dat_effect)
-  } else if ("tuneflow" %in% class(effect_wf)) {
-    effect_wf$workflow <- effect_wf$workflow %>%
-      workflows::add_case_weights(.weights)
-    fitted <- fit(effect_wf, dat_effect)
-  } else {
-    fit_fun_char <- paste0("fit.", class(effect_wf)[1])
-    if (!"weights" %in% formalArgs(fit_fun_char)) {
-      stop("weights must be an argument for ", fit_fun_char)
-    }
-    wts_merged <- as.numeric(dat_effect$.weights)
-    fitted <- select(dat_effect, -.weights) %>%
-      fit(effect_wf, data = ., weights = wts_merged)
-  }
+  fitted <- effect_wf %>%
+    add_weights_column(".weights") %>%
+    fit(dat_effect)
 
+  # standardize class of output so that predictions are always in same format??
   fitted
 }
 

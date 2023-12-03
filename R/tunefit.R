@@ -16,9 +16,9 @@
 #' @rdname  as.tunefit
 tune_params <- function(
     trainer,
+    data = NULL,
     grid = NULL,
     metric = NULL,
-    data = NULL,
     v = 10,
     resamples = rsample::vfold_cv(data, v),
     alpha = 0.05,
@@ -38,12 +38,15 @@ tune_params <- function(
     if (!"workflow" %in% class(trainer)) {
       stop("if trainer is not a workflow, a grid must be explicitly specified.")
     }
+    form <- pull_workflow_preprocessor(trainer)
+    stopifnot(class(form) == "formula")
     grid <- trainer %>%
       hardhat::extract_parameter_set_dials() %>%
-      dials::finalize(trainer.frame(form[-2], dat1)) %>%
+      dials::finalize(model.frame(form[-2], dat1)) %>%
       dials::grid_latin_hypercube(size = size)
   }
 
+  stopifnot(is.data.frame(grid))
   size <- nrow(grid)
   performance <- matrix(NA, v, size)
   skip_ind <- rep(FALSE, size)
@@ -160,18 +163,18 @@ metric_neg_log_lik <- function(
 #' @examples
 #' library(tidymodels)
 #' library(dplyr)
-#' 
+#'
 #' set.seed(0)
 #' training <- sim_data(setup = "A", n = 300, p = 6, sigma = 1)
 #' training$data <- sim_data(setup = "A", n = 300, p = 6, sigma = 1)$data
-#' 
+#'
 #' mod_spec <- boost_tree(min_n = tune(), learn_rate = tune()) %>%
 #'   set_engine("xgboost")
-#' 
+#'
 #' wf <- workflow() %>%
 #'   add_model(set_mode(mod_spec, "classification")) %>%
 #'   add_formula(training$formulas$treatment)
-#' 
+#'
 #' if (FALSE) {
 #'   # Optionally, the tuning process can be parallelized by first
 #'   # registering a cluster.
@@ -179,21 +182,20 @@ metric_neg_log_lik <- function(
 #'   cl <- makePSOCKcluster(cores)
 #'   registerDoParallel(cl)
 #' }
-#' 
+#'
 #' ## Example using tune_params explicitly
 #' set.seed(0)
-#' tuned_wf <- tune_params(wf, data = training$data, size =2) #setting size artificially small for example
+#' tuned_wf <- tune_params(wf, data = training$data, size = 2) # setting size artificially small for example
 #' fitted1 <- fit(tuned_wf, training$data)
 #' pred1 <- predict(fitted1, training$data, "prob")
-#' 
+#'
 #' ## Example using tune_params implicitly
 #' set.seed(0)
-#' fitted2 <- as.tunefit(wf, size =2) %>%
+#' fitted2 <- as.tunefit(wf, size = 2) %>%
 #'   wpor::fit(training$data)
 #' pred2 <- predict(fitted2, training$data, "prob")
-#' 
+#'
 #' testthat::expect_equal(pred1, pred2)
-#' }
 as.tunefit <- function(trainer, ...) {
   dots <- list(...)
   list(trainer = trainer, tune_args = dots) %>%

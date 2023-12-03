@@ -15,3 +15,15 @@ update_params.lightgbm_spec <- function(object, new_params) {
 update_params.workflow <- function(object, new_params) {
   tune::finalize_workflow(object, new_params)
 }
+
+
+
+#' @export
+get_params <- function(object, ...) {
+  UseMethod("update_params")
+}
+
+#' @export
+get_params.lightgbm_spec <- function(object, new_params) {
+  object$params
+}

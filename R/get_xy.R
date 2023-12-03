@@ -11,13 +11,16 @@ get_y <- function(object, data, ...) {
 
 #' @export
 get_x.lightgbm_spec <-
+  get_x.tuned_boost_spec <-
   get_x.cvboost_spec <- function(object, data) {
     formula_x <- object$formula[-2] # remove LHS
     model.matrix(formula_x, data = data)
   }
 
+
 #' @export
 get_y.lightgbm_spec <-
+  get_y.tuned_boost_spec <-
   get_y.cvboost_spec <- function(object, data) {
     y <- model.frame(object$formula, data = data)[[1]]
     if (object$mode == "classification") {
