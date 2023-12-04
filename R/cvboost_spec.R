@@ -15,20 +15,26 @@ rm_class <- function(obj, class_name) {
 #' @param process_x_mat a function to be applied to
 #' the result of model.matrix
 #' @export
-cvboost_spec <- function(formula, mode, control = NULL) {
-  list(formula = formula, mode = mode, control = control) %>%
+cvboost_spec <- function(formula, mode, control = NULL, weights_column = NULL) {
+  list(
+    formula = formula,
+    mode = mode,
+    control = control,
+    weights_column = weights_column
+  ) %>%
     add_class("cvboost_spec")
 }
 
 
 #' Fit a cvboost model based on a specification
 #' @export
-fit.cvboost_spec <- function(object, data, weights = NULL) {
+fit.cvboost_spec <- function(object, data) {
+  w <- get_weights(object, data)
   fitted <- do.call(rlearner::cvboost, c(
     list(
       x = get_x(object, data),
       y = get_y(object, data),
-      weights = weights,
+      weights = w,
       objective = switch(object$mode,
         regression = "reg:squarederror",
         classification = "binary:logistic"
@@ -71,16 +77,11 @@ postprocess_response <- function(spec, response) {
 
 #' Define a boosting specification, tuned by cross-validation
 #' @export
-tuned_boost_spec <- function(
-    formula, mode, control = NULL,
-    data = NULL, weights = NULL,
-    fit_init = NULL) {
-  init_spec <- cvboost_spec(
-    formula = formula, mode = mode, control = control
-  )
+tuned_boost_spec <- function(data = NULL, fit_init = NULL, ...) {
+  init_spec <- cvboost_spec(...)
   if (is.null(fit_init)) {
     if (is.null(data)) stop("Either data or fit_init must be provided.")
-    fit_init <- fit(init_spec, data, weights = weights)
+    fit_init <- fit(init_spec, data)
   }
   init_spec$param <- fit_init$param
   init_spec$nrounds <- fit_init$nrounds
@@ -93,11 +94,12 @@ tuned_boost_spec <- function(
 
 #' Fit a tuned, boosting specification
 #' @export
-fit.tuned_boost_spec <- function(object, data, weights = NULL) {
+fit.tuned_boost_spec <- function(object, data) {
+  w <- get_weights(object, data)
   DMatrix <- xgboost::xgb.DMatrix(
     data = get_x(object, data),
     label = get_y(object, data),
-    weight = weights
+    weight = w
   )
   xgb_model <- xgboost::xgb.train(
     data = DMatrix,

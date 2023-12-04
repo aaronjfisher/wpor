@@ -23,7 +23,7 @@ form <- formula(paste("treatment ~", rhs))
 
 
 
-test_that("weights are used in tune_wf for lasso, but not in standard tune::tune_grid", {
+test_that("weights are used in tune_params for lasso, but not in standard tune::tune_grid", {
   library(tidymodels)
   library(dplyr)
 
@@ -41,8 +41,8 @@ test_that("weights are used in tune_wf for lasso, but not in standard tune::tune
     workflows::add_case_weights(w_nonactive)
 
   rs <- rsample::vfold_cv(train, v = 2)
-  my_tuned_active <- tune_wf(wf_active, data = train, resamples = rs, size = 10)
-  my_tuned_nonactive <- tune_wf(wf_nonactive, data = train, resamples = rs, size = 10)
+  my_tuned_active <- tune_params(wf_active, data = train, resamples = rs, size = 10)
+  my_tuned_nonactive <- tune_params(wf_nonactive, data = train, resamples = rs, size = 10)
 
   my_active_penalty <- workflows::extract_spec_parsnip(my_tuned_active)$args$penalty %>%
     rlang::eval_tidy(expr = .)

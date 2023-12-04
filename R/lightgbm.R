@@ -1,11 +1,3 @@
-# update_params
-# add_weights
-# fit #without specifying weights; do in cv folds
-# predict
-
-
-
-
 #' Define a lightgbm model specification
 #' @export
 #' @examples
@@ -20,11 +12,11 @@
 #' fit_trt <- fit(trt_mod, training$data)
 #'
 #' pred_trt_train <- predict(fit_trt, training$data)
-#' boxplot(pred_trt_train$.pred_1 ~ training$data$treatment)
+#' boxplot(pred_trt_train ~ training$data$treatment)
 #'
 #' test <- sim_data(setup = "A", n = 2000, p = 6, sigma = 1)
 #' pred_trt_test <- predict(fit_trt, test$data)
-#' boxplot(pred_trt_test$.pred_1 ~ test$data$treatment)
+#' boxplot(pred_trt_test ~ test$data$treatment)
 #'
 #'
 #' out_mod <- lightgbm_spec(
@@ -35,8 +27,8 @@
 #'
 #' pred_out_train <- predict(fit_out, training$data)
 #' pred_out_test <- predict(fit_out, test$data)
-#' plot(pred_out_train$.pred, training$data$outcome)
-#' plot(pred_out_test$.pred, test$data$outcome)
+#' plot(pred_out_train, training$data$outcome)
+#' plot(pred_out_test, test$data$outcome)
 lightgbm_spec <- function(
     formula,
     mode,
@@ -66,11 +58,8 @@ lightgbm_spec <- function(
 fit.lightgbm_spec <- function(object, data, verbose = -1, ...) {
   x <- get_x(object, data)
   y <- get_y(object, data)
-  if (is.null(object$weights_column)) {
-    w <- y * 0 + 1
-  } else {
-    w <- data[[object$weights_column]]
-  }
+  w <- get_weights(object, data)
+
   dtrain <- lightgbm::lgb.Dataset(data = x, label = y, weight = w)
   fit <- lightgbm::lgb.train(
     params = object$params,

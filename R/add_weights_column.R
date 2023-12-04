@@ -55,7 +55,10 @@ get_weights_column <- function(object, ...) {
 get_weights_column.lightgbm_spec <- function(object) {
   object$weights_column
 }
-
+#' @export
+get_weights_column.tuned_boost_spec <- function(object) {
+  object$weights_column
+}
 #' @export
 get_weights_column.cvboost_spec <- function(object) {
   object$weights_column

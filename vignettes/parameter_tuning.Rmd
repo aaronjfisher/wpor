@@ -21,7 +21,8 @@ does something special if it is.
 
 ```{r, include = FALSE}
 # Simulate data
-
+library("wpor")
+library("dplyr")
 
 
 set.seed(0)
@@ -74,7 +75,7 @@ wf <- workflow() %>%
   add_model(set_mode(mod_spec, "classification")) %>%
   add_formula(training$formulas$treatment)
 
-  
+
 tuned_wf <- tune_params(
   wf,
   metric = NULL,
