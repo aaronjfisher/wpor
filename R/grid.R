@@ -18,7 +18,7 @@ random_grid <- function(size, ...) {
 
 #' @export
 #' @rdname random_grid
-lightgbm_grid <- function(size, marginal_len = 20) {
+lightgbm_grid <- function(size, marginal_len = 20, num_threads = 1) {
   random_grid(
     size = size,
     num_trees = round(log_seq(10, 1000, length = marginal_len)),
@@ -26,7 +26,8 @@ lightgbm_grid <- function(size, marginal_len = 20) {
     max_leaves = round(log_seq(2, 50, length = marginal_len)),
     bagging_fraction = seq(.1, 1, length = marginal_len),
     min_data_in_leaf = round(log_seq(4, 50, length = marginal_len)),
-    min_gain_to_split = log_seq(10^-10, 10^-2, length = marginal_len)
+    min_gain_to_split = log_seq(10^-10, 10^-2, length = marginal_len),
+    num_threads = num_threads
   )
 }
 
