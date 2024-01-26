@@ -18,7 +18,7 @@ random_grid <- function(size, ...) {
 
 #' @export
 #' @rdname random_grid
-lightgbm_grid <- function(size, marginal_len = 20, num_threads=1) {
+lightgbm_grid <- function(size, marginal_len = 20, num_threads = 1) {
   random_grid(
     size = size,
     num_trees = round(log_seq(10, 1000, length = marginal_len)),
