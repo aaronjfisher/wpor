@@ -7,7 +7,7 @@
 \usage{
 random_grid(size, ...)
 
-lightgbm_grid(size, marginal_len = 20)
+lightgbm_grid(size, marginal_len = 20, num_threads = 1)
 }
 \arguments{
 \item{size}{number of rows for the grid.}
