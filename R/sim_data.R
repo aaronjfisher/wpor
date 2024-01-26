@@ -53,8 +53,8 @@ sim_data <- function(setup, n, p, sigma) {
       X <- matrix(x_vec, ncol = 1)
       colnames(X) <- "x.1"
       e <- x_vec
-      b <- rep(1, n)
-      tau <- rep(1, n)
+      b <- rep(0, n)
+      tau <- rep(0, n)
       list(X = X, b = b, tau = tau, e = e)
     }
   } else if (setup == 'G'){
