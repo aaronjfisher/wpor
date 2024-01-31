@@ -21,25 +21,41 @@ library("dplyr")
 library("tidymodels")
 
 set.seed(456)
-p <- 6
-n_train <- 500
-n_test <- 20000
-sigma <- 1
-setup <- "B"
-train_data <- sim_data(
-  setup = setup, n = n_train, p = p, sigma = sigma
-)$data
-test_list <- sim_data(
-  setup = setup, n = n_test, p = p, sigma = sigma
-)
-test_data <- test_list$data
+
+if (require("bartcs")) {
+  data(ihdp, package = "bartcs")
+  test_data <-
+    train_data <- ihdp %>%
+    rename(outcome = y_factual) %>%
+    select(-c("y_cfactual", "mu0", "mu1")) %>%
+    mutate(treatment = factor(treatment, levels = 0:1))
+  tau <- ihdp$mu1 - ihdp$mu0
+
+  cn <- colnames(train_data)
+  x_terms <- cn[starts_with("X", vars = cn)]
+} else {
+  p <- 6
+  n_train <- 500
+  n_test <- 20000
+  sigma <- 1
+  setup <- "B"
+  train_data <- sim_data(
+    setup = setup, n = n_train, p = p, sigma = sigma
+  )$data
+  test_list <- sim_data(
+    setup = setup, n = n_test, p = p, sigma = sigma
+  )
+  tau <- test_list$params$tau
+  test_data <- test_list$data
+
+  cn <- colnames(train_data)
+  x_terms <- cn[starts_with("x.", vars = cn)]
+}
 ```
 
 
 ## Define workflows for each nuisance model
 ```{r define_workflows}
-cn <- colnames(train_data)
-x_terms <- cn[starts_with("x.", vars = cn)]
 rhs <- paste(x_terms, collapse = " + ")
 
 treatment_formula <- formula(paste("treatment ~", rhs))
@@ -47,23 +63,48 @@ outcome_marginal_formula <- formula(paste("outcome ~", rhs))
 outcome_single_formula <- formula(paste("outcome ~ treatment + ", rhs))
 effect_formula <- formula(paste("pseudo ~", rhs))
 
-rf_mod <-
-  rand_forest(trees = 100) %>%
-  set_engine("ranger")
+if (interactive()) {
+  tune_gbm <- function(...) {
+    tune_params(
+      verbose = verbose,
+      grid = lightgbm_grid(size, num_threads = 1),
+      size = 20, burnin = 3, v = 10
+    )
+  }
+  treatment_wf <- lightgbm_spec(formula = treatment_formula, mode = "classification") %>%
+    tune_gbm(data = train_data)
 
-treatment_wf <- workflow() %>%
-  add_model(set_mode(rf_mod, "classification")) %>%
-  add_formula(treatment_formula)
-outcome_marginal_wf <- workflow() %>%
-  add_model(set_mode(rf_mod, "regression")) %>%
-  add_formula(outcome_marginal_formula)
-outcome_single_wf <- workflow() %>%
-  add_model(set_mode(rf_mod, "regression")) %>%
-  add_formula(outcome_single_formula)
-effect_wf <- workflow() %>%
-  add_model(set_mode(rf_mod, "regression")) %>%
-  add_formula(effect_formula)
+  out_marginal_wf <- lightgbm_spec(formula = outcome_marginal_formula, mode = "regression")
+  out_single_wf <- lightgbm_spec(formula = outcome_single_formula, mode = "regression")
 
+  if (verbose) message(Sys.time(), ": ", "tuning outcome 0...")
+  outcome_0_separate_wf <- tune_gbm(out_marginal_wf, data = filter(train_data, treatment == 0), ...)
+  if (verbose) message(Sys.time(), ": ", "tuning outcome 1...")
+  outcome_1_separate_wf <- tune_gbm(out_marginal_wf, data = filter(train_data, treatment == 1), ...)
+  if (verbose) message(Sys.time(), ": ", "tuning outcome marginal...")
+  outcome_marginal_wf <- tune_gbm(out_marginal_wf, data = train_data, ...)
+  if (verbose) message(Sys.time(), ": ", "tuning outcome single...")
+  outcome_single_wf <- tune_gbm(out_single_wf, data = train_data, ...)
+  effect_wf <- lightgbm_spec(formula = effect_formula, mode = "regression") %>%
+    as.tunefit(verbose = verbose, size = size, grid = lightgbm_grid(size), ...)
+} else {
+  rf_mod <-
+    rand_forest(trees = 100) %>%
+    set_engine("ranger")
+
+  treatment_wf <- workflow() %>%
+    add_model(set_mode(rf_mod, "classification")) %>%
+    add_formula(treatment_formula)
+  outcome_marginal_wf <- workflow() %>%
+    add_model(set_mode(rf_mod, "regression")) %>%
+    add_formula(outcome_marginal_formula)
+  outcome_single_wf <- workflow() %>%
+    add_model(set_mode(rf_mod, "regression")) %>%
+    add_formula(outcome_single_formula)
+  effect_wf <- workflow() %>%
+    add_model(set_mode(rf_mod, "regression")) %>%
+    add_formula(effect_formula)
+}
 treatment_wf
 outcome_marginal_wf
 outcome_single_wf
@@ -87,10 +128,7 @@ fitted <- fit_wpor(
 )
 
 ## MSE
-mean((
-  predict(fitted, test_data)$.pred
-    - test_list$params$tau
-)^2)
+mean((predict(fitted, test_data)$.pred - tau)^2)
 ```
 
 Alternatively, the nuisance predictions can be pre-computed. This is helpful when comparing options for `pseudo_fun` and/or `weight_fun`.
@@ -106,34 +144,61 @@ nuisance_tbl <- crossfit_nuisance(
   cf_order = 2
 )
 
-fitted2 <- fit_wpor(
+fitted_U_learner <- fit_wpor(
   data = train_data,
-  nuisance_tbl = nuisance_tbl,
-  effect_wf = effect_wf,
-  # pseudo_fun = pseudo_DR_separate,
+  nuisance_tbl = nuisance_tbl, effect_wf = effect_wf,
+  pseudo_fun = pseudo_U,
+  weight_fun = weight_1
+)
+fitted_DR_1_single_learner <- fit_wpor(
+  data = train_data,
+  nuisance_tbl = nuisance_tbl, effect_wf = effect_wf,
   pseudo_fun = pseudo_DR_single,
-  # pseudo_fun = pseudo_cov,
-  # pseudo_fun = pseudo_U,
-  weight_fun = weight_DR_X,
-  # weight_fun = weight_DR_AX,
-  # weight_fun = weight_1,
-  # weight_fun = weight_U_AX,
-  # weight_fun = weight_U_X,
+  weight_fun = weight_1
+)
+fitted_R_learner <- fit_wpor(
+  data = train_data,
+  nuisance_tbl = nuisance_tbl, effect_wf = effect_wf,
+  pseudo_fun = pseudo_U,
+  weight_fun = weight_U_AX
+)
+fitted_DR_X_single_learner <- fit_wpor(
+  data = train_data,
+  nuisance_tbl = nuisance_tbl, effect_wf = effect_wf,
+  pseudo_fun = pseudo_DR_single,
+  weight_fun = weight_DR_X
 )
 
-mean((
-  predict_expected_value(fitted2, test_data)
-  - test_list$params$tau
-)^2)
+get_rmse <- function(fitted) {
+  sqrt(mean((predict_expected_value(fitted, test_data) - tau)^2))
+}
+
+
+get_rmse(fitted_DR_1_single_learner)
+get_rmse(fitted_DR_X_single_learner)
+get_rmse(fitted_U_learner)
+get_rmse(fitted_R_learner)
 ```
 
 # Two-Learner (T-Learner) approach
 
 ```{r workspace, include=FALSE, eval=FALSE}
 t_learner_fitted <- t_learner(train_data, outcome_marginal_wf)
-mean((
-  predict_expected_value(t_learner_fitted, test_data)
-  - test_list$params$tau
-)^2)
+get_rmse(t_learner_fitted)
 ```
 
+
+```{r}
+sbart_fit <- single_bart(
+  Y               = ihdp$y_factual,
+  trt             = ihdp$treatment,
+  X               = ihdp[, 6:30],
+  num_tree        = 10,
+  num_chain       = 4,
+  num_post_sample = 100,
+  num_burn_in     = 100,
+  verbose         = FALSE
+)
+predict(sbart_fit, test_data)
+mse <- mean((unlist(sbart_fit$mcmc_list[, "ATE"]) - ATE)^2)
+```
