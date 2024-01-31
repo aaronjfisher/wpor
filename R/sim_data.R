@@ -53,8 +53,21 @@ sim_data <- function(setup, n, p, sigma) {
       X <- matrix(x_vec, ncol = 1)
       colnames(X) <- "x.1"
       e <- x_vec
-      b <- rep(1, n)
-      tau <- rep(1, n)
+      b <- rep(0, n)
+      tau <- rep(0, n)
+      list(X = X, b = b, tau = tau, e = e)
+    }
+  } else if (setup == 'G'){
+    ## experimental, pending Edward's comments
+    get.params <- function() {
+      expit <- function(x){ exp(x)/(1+exp(x)) }; logit <- function(x){ log(x/(1-x)) }
+      d <- 500; alpha <- d/10; beta <- alpha
+      
+      X <- matrix(rnorm(n*d), n, d)
+      b <- expit(as.numeric(X %*% rep(c(1, 0), c(beta,d-beta)))/sqrt(beta/1))
+      e <- expit(as.numeric(X %*% rep(c(1, 0), c(alpha,d-alpha)))/sqrt(alpha/0.25))
+      tau <- rep(0, n)
+      
       list(X = X, b = b, tau = tau, e = e)
     }
   } else {
@@ -67,12 +80,24 @@ sim_data <- function(setup, n, p, sigma) {
   outcome <- params$b + (treatment_num - 0.5) * params$tau + sigma * rnorm(n)
   colnames(outcome) <- NULL
 
+  train_data <- data.frame(
+    outcome = outcome,
+    treatment = treatment_factor,
+    x = params$X
+  )
+
+  x_terms <- train_data %>%
+    dplyr::select(dplyr::starts_with("x.")) %>%
+    colnames()
+  rhs <- paste(x_terms, collapse = " + ")
+
   list(
-    data = data.frame(
-      outcome = outcome,
-      treatment = treatment_factor,
-      x = params$X
-    ),
-    params = params
+    data = train_data,
+    params = params,
+    formulas = list(
+      outcome = formula(paste("outcome ~", rhs)),
+      treatment = formula(paste("treatment ~", rhs)),
+      effect = formula(paste("pseudo ~", rhs))
+    )
   )
 }
