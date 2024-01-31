@@ -62,18 +62,6 @@ predict.cvboost_fit <- function(object, new_data) {
   )
 }
 
-postprocess_response <- function(spec, response) {
-  if (spec$mode == "regression") {
-    return(tibble::tibble(.pred = response))
-  }
-  if (spec$mode == "classification") {
-    return(tibble::tibble(
-      .pred_0 = 1 - response,
-      .pred_1 = response
-    ))
-  }
-  stop("invalid mode")
-}
 
 #' Define a boosting specification, tuned by cross-validation
 #' @export

@@ -106,7 +106,7 @@ crossfit_nuisance <- function(
   E_outcome_obs <- fit_on_folds(outcome_obs_wf, folds_all) %>%
     rename(.pred_outcome_obs = .pred) %>%
     select(.row, .fold_id, .pred_outcome_obs)
-  ## !! decide whether to compute this adaptively??
+  ## !!!! decide whether to compute this adaptively??
 
   if (verbose) message("Reshaping nuisance predictions")
   pred_df <- merge(E_outcome_0_tbl, E_outcome_1_tbl) %>%
