@@ -4,7 +4,7 @@
 \alias{cvboost_spec}
 \title{Define a cvboost model specification}
 \usage{
-cvboost_spec(formula, mode, control = NULL)
+cvboost_spec(formula, mode, control = NULL, weights_column = NULL)
 }
 \arguments{
 \item{process_x_mat}{a function to be applied to

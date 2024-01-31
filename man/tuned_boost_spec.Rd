@@ -4,14 +4,7 @@
 \alias{tuned_boost_spec}
 \title{Define a boosting specification, tuned by cross-validation}
 \usage{
-tuned_boost_spec(
-  formula,
-  mode,
-  control = NULL,
-  data = NULL,
-  weights = NULL,
-  fit_init = NULL
-)
+tuned_boost_spec(data = NULL, fit_init = NULL, ...)
 }
 \description{
 Define a boosting specification, tuned by cross-validation

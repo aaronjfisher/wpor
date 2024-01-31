@@ -2,41 +2,33 @@ library("dplyr")
 library("rslurm")
 source('wpor_sim_fun.R')
 
-size = 10
+size = 20
 alpha = 0.05
 v = 10
 burnin = 3
-nsim <- 200
+nsim <- 250
+nodes <- 3000
 
 #tuned_df <- readRDS('pretune_results.rds')
 tuned_df <- NULL
 #tuned_df <- readRDS('_rslurm_pretune_weighted/combined_results.rds')
 #tuned_df
 
-include_rlearner_comparison <- NULL
 
 
-simultaneous <- 90
+simultaneous <- 60
 
-nodes <- nrow(results_tbl)
 #(job_path <- paste0(Sys.Date(),'_pretuned_parsnip_and_cv_', nsim))
-(job_path <- paste0(Sys.Date(),'_active-tune_', nsim))
+(job_path <- paste0(Sys.Date(),'_lightgbm_', nsim))
 #(job_path <- paste0(Sys.Date(),'_crossfit_test_', nsim))
 (slurm_dir <- paste0('_rslurm_', gsub('-','', job_path),'/'))
 
 
-if(!dir.exists('sbatch-array')){
-  dir.create('sbatch-array')
-  writeLines(con = 'sbatch-array/.gitignore', text = c(
-    '*.out',
-    '*.rds',
-    '*.txt'))
-}
 
 results_tbl <- expand.grid(
-  learners = c('parsnip_boost','cvboost'), #'parsnip_random_forest', 'cvboost' 'parsnip_boost'
-  n_obs = c(250,500,1000),#, 1000, 250
-  p = 6,#c(6,12),
+  learners = c('parsnip_random_forest','lightgbm','cvboost','rlearner_package'), #'parsnip_boost', 'lightgbm'
+  n_obs = c(250,500,1000, 2000),#, 1000, 250
+  p = c(10),
   sigma = 1,#c(0.5, 1, 2),#, 3),
   setup = c('A','B','C','D','E','F'),
   nuisance = c('estimated'),
@@ -50,12 +42,14 @@ results_tbl <- expand.grid(
   crossfit_treatment_nll = NA
 ) %>% 
   tibble() %>%
-  mutate(id = 1:n())
+  mutate(id = 1:n()) %>%
+  filter(seed <= 100 | learners == 'lightgbm')
 results_tbl$mse <- vector('list', nrow(results_tbl))
 
+nrow(results_tbl)/nodes
 
 mse_NA <- expand.grid(
-  pseudo = c('pseudo_U','pseudo_DR','T', 'rlearner_package'),
+  pseudo = c('pseudo_U','pseudo_DR','T'),
   weights = c(
     'weight_1'
     ,'weight_U_X' 
@@ -69,7 +63,6 @@ mse_NA <- expand.grid(
 ) %>%
   filter(
     !(pseudo == 'T' & weights != 'weight_1'),
-    !(pseudo == 'rlearner_package' & weights != 'weight_U_AX'),
     !(pseudo == 'pseudo_U' & weights == 'weight_DR_X'),
     !(pseudo == 'pseudo_U' & weights == 'weight_DR_AX'),
     !(pseudo == 'pseudo_U' & weights == 'weight_DR_alt_AX'),
@@ -97,11 +90,10 @@ mse_NA
 if(FALSE){
   #workspace for testing
   s1 <- simulate_from_df(
-    sim_df = results_tbl[1:3,],
+    sim_df = results_tbl[1,],
     pretuned = tuned_df,
     mse_NA = mse_NA,
     verbose = TRUE,
-    include_rlearner_comparison = FALSE,
     size = size, alpha = alpha, v = v, burnin = burnin
   )
   s1$tune_time
@@ -117,7 +109,7 @@ if(FALSE){
     nodes = nodes,
     f = simulate_from_df,
     job_array_task_limit = simultaneous,
-    pkgs = c("wpor", "dplyr", "tidymodels", "pbapply", "rlearner", "workflows"),
+    pkgs = c("wpor", "dplyr", "tidymodels", "pbapply", "rlearner", "workflows", "lightgbm"),
     jobname = job_path,
     cpus_per_node = 1, 
       # avoid mclapply as it's harder to debug than standard 
@@ -132,8 +124,7 @@ if(FALSE){
     ),
     mse_NA = mse_NA,
     size = size, alpha = alpha, v = v, burnin = burnin,
-    pretuned = tuned_df,
-    include_rlearner_comparison = include_rlearner_comparison
+    pretuned = tuned_df
   )
   saveRDS(sjob, paste0(slurm_dir,'sjob.rds'))
   yaml::write_yaml(sjob,  paste0(slurm_dir,'sjob.yaml'))

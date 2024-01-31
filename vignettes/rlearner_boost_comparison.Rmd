@@ -48,20 +48,20 @@ effect_formula <- formula(paste("pseudo ~", rhs))
 
 
 treatment_wf <- tuned_boost_spec(
-  treatment_formula,
-  "classification",
+  formula = treatment_formula,
+  mode = "classification",
   data = train_data,
   control = list(nthread = 1)
 )
 outcome_wf <- tuned_boost_spec(
-  outcome_formula,
-  "regression",
+  formula = outcome_formula,
+  mode = "regression",
   data = train_data,
   control = list(nthread = 1)
 )
 effect_wf <- cvboost_spec(
-  effect_formula,
-  "regression",
+  formula = effect_formula,
+  mode = "regression",
   control = list(nthread = 1)
 )
 
@@ -99,7 +99,7 @@ fitted <- fit_wpor(
 
 ## MSE
 true_test_effect <- test_list$params$tau
-wpor_pred <- predict(fitted, test_data)$.pred
+wpor_pred <- predict(fitted, test_data)
 mean((wpor_pred - true_test_effect)^2)
 cbind(wpor_pred, true_test_effect) %>%
   plot()
@@ -129,7 +129,7 @@ plot(wpor_pred, pred_rboost, asp = 1)
 t_learner_wf <- cvboost_spec(outcome_formula, "regression")
 t_learner_fitted <- t_learner(train_data, t_learner_wf)
 mean(
-  (predict(t_learner_fitted, test_data)$.pred - test_list$params$tau)^2
+  (predict(t_learner_fitted, test_data) - test_list$params$tau)^2
 )
 
 tboost_out <- rlearner::tboost(x = train_x, y = train_y, w = train_w)

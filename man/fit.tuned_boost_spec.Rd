@@ -4,7 +4,7 @@
 \alias{fit.tuned_boost_spec}
 \title{Fit a tuned, boosting specification}
 \usage{
-\method{fit}{tuned_boost_spec}(object, data, weights = NULL)
+\method{fit}{tuned_boost_spec}(object, data)
 }
 \description{
 Fit a tuned, boosting specification
