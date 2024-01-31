@@ -57,17 +57,24 @@ sim_data <- function(setup, n, p, sigma) {
       tau <- rep(0, n)
       list(X = X, b = b, tau = tau, e = e)
     }
-  } else if (setup == 'G'){
+  } else if (setup == "G") {
     ## experimental, pending Edward's comments
     get.params <- function() {
-      expit <- function(x){ exp(x)/(1+exp(x)) }; logit <- function(x){ log(x/(1-x)) }
-      d <- 500; alpha <- d/10; beta <- alpha
-      
-      X <- matrix(rnorm(n*d), n, d)
-      b <- expit(as.numeric(X %*% rep(c(1, 0), c(beta,d-beta)))/sqrt(beta/1))
-      e <- expit(as.numeric(X %*% rep(c(1, 0), c(alpha,d-alpha)))/sqrt(alpha/0.25))
+      expit <- function(x) {
+        exp(x) / (1 + exp(x))
+      }
+      logit <- function(x) {
+        log(x / (1 - x))
+      }
+      d <- 500
+      alpha <- d / 10
+      beta <- alpha
+
+      X <- matrix(rnorm(n * d), n, d)
+      b <- expit(as.numeric(X %*% rep(c(1, 0), c(beta, d - beta))) / sqrt(beta / 1))
+      e <- expit(as.numeric(X %*% rep(c(1, 0), c(alpha, d - alpha))) / sqrt(alpha / 0.25))
       tau <- rep(0, n)
-      
+
       list(X = X, b = b, tau = tau, e = e)
     }
   } else {

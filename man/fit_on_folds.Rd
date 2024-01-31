@@ -4,7 +4,7 @@
 \alias{fit_on_folds}
 \title{Fit workflow or object on resampled folds}
 \usage{
-fit_on_folds(object, rset)
+fit_on_folds(object, rset, do_1 = FALSE, do_0 = FALSE, analysis_rows = NULL)
 }
 \arguments{
 \item{object}{must have a fit method, which returns an object with a
@@ -13,7 +13,21 @@ If the object's predict method returns output in a different format
 (e.g., a fitted parsnip model), then the user must define a
 \code{predict_expected_value} method.}
 
-\item{rset}{e.g., the output of vfold_cv
+\item{rset}{e.g., the output of vfold_cv}
+
+\item{do_1}{whether to return an additional column of predictions
+for the assessment fold, in which treatment is set to 1.}
+
+\item{do_0}{whether to return an additional column of predictions
+for the assessment fold, in which treatment is set to 0.}
+
+\item{analysis_rows}{a subset of .row values to use for training.
+This is helpful, for example,
+for fitting a model only on treated patients, but obtaining
+predictions on all patients.}
+
+\item{...}{see \code{filter_analysis}.
+
 This function is based on tune::fit_resamples, but it is not a generic.
 Thus, for custom fitting procedures that are not workflows,
 the user still needs to ensure that a fit method exists,

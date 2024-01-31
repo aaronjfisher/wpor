@@ -43,7 +43,8 @@ x_terms <- cn[starts_with("x.", vars = cn)]
 rhs <- paste(x_terms, collapse = " + ")
 
 treatment_formula <- formula(paste("treatment ~", rhs))
-outcome_formula <- formula(paste("outcome ~", rhs))
+outcome_marginal_formula <- formula(paste("outcome ~", rhs))
+outcome_single_formula <- formula(paste("outcome ~ treatment + ", rhs))
 effect_formula <- formula(paste("pseudo ~", rhs))
 
 rf_mod <-
@@ -53,15 +54,19 @@ rf_mod <-
 treatment_wf <- workflow() %>%
   add_model(set_mode(rf_mod, "classification")) %>%
   add_formula(treatment_formula)
-outcome_wf <- workflow() %>%
+outcome_marginal_wf <- workflow() %>%
   add_model(set_mode(rf_mod, "regression")) %>%
-  add_formula(outcome_formula)
+  add_formula(outcome_marginal_formula)
+outcome_single_wf <- workflow() %>%
+  add_model(set_mode(rf_mod, "regression")) %>%
+  add_formula(outcome_single_formula)
 effect_wf <- workflow() %>%
   add_model(set_mode(rf_mod, "regression")) %>%
   add_formula(effect_formula)
 
 treatment_wf
-outcome_wf
+outcome_marginal_wf
+outcome_single_wf
 effect_wf
 ```
 
@@ -70,7 +75,8 @@ effect_wf
 ```{r fit_wpor}
 fitted <- fit_wpor(
   data = train_data,
-  outcome_obs_wf = outcome_wf,
+  outcome_marginal_wf = outcome_marginal_wf,
+  outcome_single_wf = outcome_single_wf,
   treatment_wf = treatment_wf,
   effect_wf = effect_wf,
   pseudo_fun = pseudo_U,
@@ -92,7 +98,8 @@ Alternatively, the nuisance predictions can be pre-computed. This is helpful whe
 ```{r}
 nuisance_tbl <- crossfit_nuisance(
   data = train_data,
-  outcome_obs_wf = outcome_wf,
+  outcome_marginal_wf = outcome_marginal_wf,
+  outcome_single_wf = outcome_single_wf,
   treatment_wf = treatment_wf,
   min_prob = 0.01,
   v = 5,
@@ -103,29 +110,30 @@ fitted2 <- fit_wpor(
   data = train_data,
   nuisance_tbl = nuisance_tbl,
   effect_wf = effect_wf,
-  pseudo_fun = pseudo_DR,
+  # pseudo_fun = pseudo_DR_separate,
+  pseudo_fun = pseudo_DR_single,
   # pseudo_fun = pseudo_cov,
   # pseudo_fun = pseudo_U,
-  # weight_fun = weight_DR_X,
-  weight_fun = weight_DR_AX,
+  weight_fun = weight_DR_X,
+  # weight_fun = weight_DR_AX,
   # weight_fun = weight_1,
   # weight_fun = weight_U_AX,
   # weight_fun = weight_U_X,
 )
 
 mean((
-  predict(fitted2, test_data)$.pred
-    - test_list$params$tau
+  predict_expected_value(fitted2, test_data)
+  - test_list$params$tau
 )^2)
 ```
 
 # Two-Learner (T-Learner) approach
 
 ```{r workspace, include=FALSE, eval=FALSE}
-t_learner_fitted <- t_learner(train_data, outcome_wf)
+t_learner_fitted <- t_learner(train_data, outcome_marginal_wf)
 mean((
-  predict(t_learner_fitted, test_data)$.pred
-    - test_list$params$tau
+  predict_expected_value(t_learner_fitted, test_data)
+  - test_list$params$tau
 )^2)
 ```
 
