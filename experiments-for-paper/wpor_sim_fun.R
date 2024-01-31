@@ -1,5 +1,6 @@
 #renv::install('aaronjfisher/wpor@af/broader-sims')
 #renv::install('..')
+#renv::snapshot()
 #devtools::document('..')
 #devtools::install('..')
 #unloadNamespace('wpor')
@@ -173,12 +174,15 @@ simulate_from_df <- function(
         tune_gbm(data = train_data, ...)
 
       out_marginal_wf <- lightgbm_spec(formula = outcome_marginal_formula, mode = "regression")
+      out_single_wf <- lightgbm_spec(formula = outcome_single_formula, mode = "regression")
+      
       if(verbose) message(Sys.time(),': ','tuning outcome 0...')
       outcome_0_separate_wf <- tune_gbm(out_marginal_wf, data = filter(train_data, treatment == 0), ...)
       if(verbose) message(Sys.time(),': ','tuning outcome 1...')
       outcome_1_separate_wf <- tune_gbm(out_marginal_wf, data = filter(train_data, treatment == 1), ...)
       if(verbose) message(Sys.time(),': ','tuning outcome marginal...')
       outcome_marginal_wf <- tune_gbm(out_marginal_wf, data = train_data, ...)
+      if(verbose) message(Sys.time(),': ','tuning outcome single...')
       outcome_single_wf <- tune_gbm(out_single_wf, data = train_data, ...)
       effect_wf <- lightgbm_spec(formula = effect_formula, mode = "regression") %>%
         as.tunefit(verbose = verbose, size = size, grid = lightgbm_grid(size), ...)
@@ -262,13 +266,21 @@ simulate_from_df <- function(
       nuisance_tbl,
       mean((outcome - .pred_outcome_marginal)^2)
     )
-    sim_df$crossfit_outcome_1_mse[i] = with(
+    sim_df$crossfit_outcome_1_separate_mse[i] = with(
       filter(nuisance_tbl, treatment == 1),
-      mean((outcome - .pred_outcome_1)^2)
+      mean((outcome - .pred_outcome_1_separate)^2)
     )
-    sim_df$crossfit_outcome_0_mse[i] = with(
+    sim_df$crossfit_outcome_0_separate_mse[i] = with(
       filter(nuisance_tbl, treatment == 0),
-      mean((outcome - .pred_outcome_0)^2)
+      mean((outcome - .pred_outcome_0_separate)^2)
+    )
+    sim_df$crossfit_outcome_1_single_mse[i] = with(
+      filter(nuisance_tbl, treatment == 1),
+      mean((outcome - .pred_outcome_1_single)^2)
+    )
+    sim_df$crossfit_outcome_0_single_mse[i] = with(
+      filter(nuisance_tbl, treatment == 0),
+      mean((outcome - .pred_outcome_0_single)^2)
     )
     sim_df$crossfit_treatment_nll[i] = 
       mean(-log(dbinom(as.numeric(nuisance_tbl$treatment==1), 1, nuisance_tbl$.pred_treatment)))
@@ -284,13 +296,14 @@ simulate_from_df <- function(
     # |_|    \___/|_| \_\
     
     mse_i <- mse_NA
+    
     for(j in 1:nrow(mse_i)){
       if(verbose) message(Sys.time(),': ', mse_i$pseudo[j],', ', mse_i$weights[j])
       if (mse_i$pseudo[j] == 'T') {
         fitted_j <- t_learner(
           data = train_data,
-          outcome_1_separate_wf = outcome_1_separate_wf,
-          outcome_0_separate_wf = outcome_0_separate_wf
+          outcome_1_wf = outcome_1_separate_wf,
+          outcome_0_wf = outcome_0_separate_wf
         )
       } else {
         spec_name_j <- with(mse_i[j,], paste0(pseudo, ':', weights))

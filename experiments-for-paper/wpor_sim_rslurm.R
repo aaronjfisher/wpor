@@ -16,10 +16,10 @@ tuned_df <- NULL
 
 
 
-simultaneous <- 60
+simultaneous <- 95
 
 #(job_path <- paste0(Sys.Date(),'_pretuned_parsnip_and_cv_', nsim))
-(job_path <- paste0(Sys.Date(),'_lightgbm_', nsim))
+(job_path <- paste0(Sys.Date(),'_single_', nsim))
 #(job_path <- paste0(Sys.Date(),'_crossfit_test_', nsim))
 (slurm_dir <- paste0('_rslurm_', gsub('-','', job_path),'/'))
 
@@ -36,9 +36,11 @@ results_tbl <- expand.grid(
   tune_time = NA,
   crossfit_time = NA,
   por_time = NA,
-  crossfit_outcome_obs_mse = NA,
-  crossfit_outcome_1_mse = NA,
-  crossfit_outcome_0_mse = NA,
+  crossfit_outcome_marginal_mse = NA,
+  crossfit_outcome_1_separate_mse = NA,
+  crossfit_outcome_0_separate_mse = NA,
+  crossfit_outcome_1_single_mse = NA,
+  crossfit_outcome_0_single_mse = NA,
   crossfit_treatment_nll = NA
 ) %>% 
   tibble() %>%
@@ -49,7 +51,7 @@ results_tbl$mse <- vector('list', nrow(results_tbl))
 nrow(results_tbl)/nodes
 
 mse_NA <- expand.grid(
-  pseudo = c('pseudo_U','pseudo_DR','T'),
+  pseudo = c('pseudo_U','pseudo_DR_single','pseudo_DR_separate','T'),
   weights = c(
     'weight_1'
     ,'weight_U_X' 
@@ -66,8 +68,10 @@ mse_NA <- expand.grid(
     !(pseudo == 'pseudo_U' & weights == 'weight_DR_X'),
     !(pseudo == 'pseudo_U' & weights == 'weight_DR_AX'),
     !(pseudo == 'pseudo_U' & weights == 'weight_DR_alt_AX'),
-    !(pseudo == 'pseudo_DR' & weights == 'weight_U_X'),
-    !(pseudo == 'pseudo_DR' & weights == 'weight_U_AX')
+    !(pseudo == 'pseudo_DR_single' & weights == 'weight_U_X'),
+    !(pseudo == 'pseudo_DR_single' & weights == 'weight_U_AX'),
+    !(pseudo == 'pseudo_DR_separate' & weights == 'weight_U_X'),
+    !(pseudo == 'pseudo_DR_separate' & weights == 'weight_U_AX')
   ) %>%
   arrange(pseudo, weights) %>%
   as_tibble()
@@ -88,9 +92,10 @@ tail(results_list,1)
 mse_NA
 
 if(FALSE){
-  #workspace for testing
+  # workspace for testing
+  # source('wpor_sim_fun.R')
   s1 <- simulate_from_df(
-    sim_df = results_tbl[which(cc != 'tbl_df'),],
+    sim_df = results_tbl[6,],
     pretuned = tuned_df,
     mse_NA = mse_NA,
     verbose = TRUE,
