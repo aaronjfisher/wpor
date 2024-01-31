@@ -5,7 +5,10 @@ library(tidyverse)
 # job_path <- '2023-11-24_parsnip_boost_active-tune_100'
 # job_path <- '2023-11-23_pretuned_parsnip_and_cv_200'
 #job_path <- '2023-11-27_parsnip_boost_active-tune_mini-test_100'
-job_path <- '2023-11-27_active-tune_200'
+# job_path <- '2023-11-27_active-tune_200'
+# job_path <- '2023-12-03_active-tune_100'
+# job_path <- '2023-12-04_lightgbm_250'
+# job_path <- '2024-01-27_lightgbm_250'
 slurm_dir <- paste0('_rslurm_', gsub('-','', job_path),'/')
 results <- readRDS(paste0(slurm_dir, 'combined_results.rds'))
 str(readRDS(paste0(slurm_dir, 'more_args.RDS')))
@@ -22,29 +25,36 @@ sum_results <- results %>%
             se_mse = mean(mse)/sqrt(n()),
             lower_mse = mean_mse - qnorm(0.975) * se_mse,
             upper_mse = mean_mse + qnorm(0.975) * se_mse) %>%
-  mutate(n_obs = as.numeric(n_obs))
+  mutate(
+    n_obs = as.numeric(n_obs)
+    )
+
+my_learner = 'lightgbm'
+#my_learner = 'parsnip_random_forest'
 
 
-#my_learner <- 'parsnip_random_forest'
-#my_learner <- 'parsnip_boost'
-my_learner <- 'cvboost'
+mypdf <- function(file, ...){
+  pdf(file= paste0('plots/',Sys.Date(),'_', file,'.pdf'), ...)
+}
 
+mypdf(paste0('main-comparison_',my_learner), width = 6, height = 8)
 sum_results %>%
   filter(
          pseudo != 'rlearner_package',
          learners == my_learner,
          weights %in% c('weight_1', 'weight_U_AX','weight_DR_X')) %>%
   ggplot(aes(x = n_obs, y = log(mean_mse), 
-             col = weights, fill = weights,
-             lty = learners)) +
+             col = weights, fill = weights)) +
   geom_line(aes(group = weights)) + 
   geom_ribbon(aes(ymin = log(lower_mse), ymax = log(upper_mse)), alpha = .3, col=NA) +
   facet_grid(setup~pseudo) + theme_bw() +
   labs(
-    title = paste('Log MSE on Simulated Data -',my_learner),
+    title = paste('Log MSE on Simulated Data -', my_learner),
     x= 'Sample size (n)',
     y= 'Log(mean squared error)'
-  )
+  ) +
+  theme(legend.position = 'bottom')
+dev.off()
 
 sum_results %>%
   filter(
@@ -72,39 +82,33 @@ sum_results %>%
 ## T learners does similar to DR on D,E,F, but much worse on A,B,C.
 sum_results %>%
   filter(pseudo %in% c('pseudo_DR','T'),
-         learners ==my_learner) %>%
-  ggplot(aes(x = n_obs, y = log(mean_mse), lty = weights, col = pseudo)) +
-  geom_line() + 
-  facet_grid(setup~.)
-
-## T learners does similar to U on D,E,F, but much worse on A,B,C.
-sum_results %>%
-  filter(pseudo %in% c('pseudo_U','T')) %>%
+         learners == my_learner) %>%
   ggplot(aes(x = n_obs, y = log(mean_mse), lty = weights, col = pseudo)) +
   geom_line() + 
   facet_grid(setup~.)
 
 
-### Aaron's R learner matches rlearner package
+### Aaron's cvboost R learner matches rlearner package 
+  ## lightgbm is somewhat different though.
 sum_results %>%
-  filter(learners == 'cvboost', 
+  filter(learners %in% c('cvboost','rlearner_package','lightgbm'),
          pseudo %in% c('pseudo_U','rlearner_package'),
-         weights =='weight_U_AX') %>%
-  ggplot(aes(x = n_obs, y = (mean_mse), col = pseudo, lty = pseudo)) +
+         weights %in% c('weights_U_AX', 'weight_U_AX')) %>% #!!!! typo !!!!
+  ggplot(aes(x = n_obs, y = (mean_mse), col = learners, lty = learners)) +
   geom_line() + 
   facet_grid(setup~.)
 
 
 ### DR learners generally benefit from weighting by X, though possibly not by AX
 sum_results %>%
-  filter(pseudo == 'pseudo_DR',learners ==my_learner) %>%
+  filter(pseudo == 'pseudo_DR',learners == my_learner) %>%
   ggplot(aes(x = n_obs, y = log(mean_mse), col = weights)) +
   geom_line() + 
   facet_grid(pseudo~setup)
 
 ### U learners generally do best when weighting by AX, and worst when weighting by 1
 sum_results %>%
-  filter(pseudo == 'pseudo_U', learners ==my_learner) %>%
+  filter(pseudo == 'pseudo_U', learners == my_learner) %>%
   ggplot(aes(x = n_obs, y =log(mean_mse), col = weights)) +
   geom_line() + 
   facet_grid(pseudo~setup)

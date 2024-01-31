@@ -7,7 +7,7 @@ alpha = 0.05
 v = 10
 burnin = 3
 nsim <- 250
-nodes <- 3000
+nodes <- 1000
 
 #tuned_df <- readRDS('pretune_results.rds')
 tuned_df <- NULL
@@ -27,7 +27,7 @@ simultaneous <- 60
 
 results_tbl <- expand.grid(
   learners = c('parsnip_random_forest','lightgbm','cvboost','rlearner_package'), #'parsnip_boost', 'lightgbm'
-  n_obs = c(250,500,1000, 2000),#, 1000, 250
+  n_obs = c(250,500,1000),
   p = c(10),
   sigma = 1,#c(0.5, 1, 2),#, 3),
   setup = c('A','B','C','D','E','F'),
@@ -90,7 +90,7 @@ mse_NA
 if(FALSE){
   #workspace for testing
   s1 <- simulate_from_df(
-    sim_df = results_tbl[1,],
+    sim_df = results_tbl[which(cc != 'tbl_df'),],
     pretuned = tuned_df,
     mse_NA = mse_NA,
     verbose = TRUE,
@@ -111,16 +111,15 @@ if(FALSE){
     job_array_task_limit = simultaneous,
     pkgs = c("wpor", "dplyr", "tidymodels", "pbapply", "rlearner", "workflows", "lightgbm"),
     jobname = job_path,
-    cpus_per_node = 1, 
-      # avoid mclapply as it's harder to debug than standard 
-      # slurm multi-core parallelization, 
-      # and even when you're allocated more cores, it doesn't go faster. 
+    cpus_per_node = 96, 
+    r_template = 'slurm_map_renv.txt',
+    libPaths = .libPaths(),
     slurm_options = list(
-      partition = 'M-16Cpu-123GB'
+      partition = 'M-96Cpu-742GB'
       ,'mail-user'=Sys.getenv('USEREMAIL')
       ,'mail-type'='ALL'
       #,'exclusive'=TRUE
-      ,mem = '6G'# mem to be shared across all CPUs on each node.
+      ,mem = '700G'# mem to be shared across all CPUs on each node.
     ),
     mse_NA = mse_NA,
     size = size, alpha = alpha, v = v, burnin = burnin,
@@ -186,7 +185,7 @@ system(paste(
 ## 20231110_parsnip_ivw_100: Req: 120G; Avg: 160. Need fewer cpus per node? None crashed though.
 
 sum(grepl('.RDS', dir(slurm_dir))) # number of completed jobs
-# slurm_dir <- "_rslurm_20231127_activetune_200/"
+# slurm_dir = "_rslurm_20240127_lightgbm_250/"
 # sjob <- readRDS(paste0(slurm_dir, 'sjob.rds'))
 job_out <- get_slurm_out(sjob, "raw", wait = FALSE)
 results <- do.call(rbind, job_out)
