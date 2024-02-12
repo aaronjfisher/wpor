@@ -21,6 +21,7 @@ simulate_from_df <- function(
     pretuned = NULL,
     time_limit = ifelse(is.null(pretuned), Inf, 60*30*nrow(sim_df)),
     size,
+    cf_order = 2,
     ...){
   
   setTimeLimit(elapsed=time_limit)
@@ -322,7 +323,8 @@ simulate_from_df <- function(
           pseudo_fun = mse_i$pseudo[j],
           weight_fun = mse_i$weights[j],
           standardize_weights = FALSE,
-          verbose = FALSE
+          verbose = FALSE,
+          cf_order = cf_order
         )
         
         if(return_specifications){

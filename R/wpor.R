@@ -124,7 +124,26 @@ crossfit_nuisance <- function(
 
   data <- check_dat(data)
 
-
+  if (cf_order == 1) {
+    browser()
+    new_splits <- list()
+    shuffled <- sample(nrow(data), replace = FALSE)
+    cut_ind <- as.numeric(cut(1:nrow(data), breaks = v))
+    analysis_list <- lapply(1:v, \(ind) shuffled[cut_ind == ind])
+    for (i in 1:v) {
+      new_splits[[i]] <- make_splits(
+        x = list(
+          analysis = analysis_list[[i]],
+          assessment = setdiff(1:nrow(data), analysis_list[[i]])
+        ),
+        data = data
+      )
+    }
+    out <- manual_rset(new_splits, paste0("Fold", 1:v))
+    assert_shared_data_address(out)
+    out
+    folds <- vfold_cv(data, v) # contains full data
+  }
   if (cf_order == 2) {
     folds <- vfold_cv(data, v) # contains full data
   }
@@ -181,18 +200,32 @@ crossfit_nuisance <- function(
     arrange(.row, .fold_id) %>%
     nest(.by = .row) %>%
     rename(.pred = data)
-
+  # For any given training observation, we will have 
+  # (cf_order-1) nuisance model predictions, each from 
+  # a separate fold.
+  # pred_df$.pred[[i]] contains a tibble of these nuisance predictions 
+  
+  if (cf_order == 1) {
+    pred_df2 <- pred_df
+    pred_df2$.pred <- lapply(pred_df$.pred, \(p){
+      mutate(p, .pred_control = 1 - .pred_treatment)
+    })
+  }
+  # pred_df2, defined below, will have a column .pred that contains all
+  # (cf_order - 1)-way combinations of nuisance estimates.
+  # These combinations will be labeled in `.fold_id` according
+  # to the folds of pred_df that were combined to produce them.
   if (cf_order == 2) {
     pred_df2 <- pred_df
     pred_df2$.pred <- lapply(pred_df$.pred, \(p){
-      stopifnot(length(p$.fold_id) == 1)
+      stopifnot(length(p$.fold_id) == cf_order - 1)
       mutate(p, .pred_control = 1 - .pred_treatment)
     })
   }
   if (cf_order == 3) {
     pred_df2 <- pred_df
     pred_df2$.pred <- lapply(pred_df$.pred, \(p){
-      stopifnot(length(p$.fold_id) == 2)
+      stopifnot(length(p$.fold_id) == cf_order - 1)
       eg <- expand.grid(1:2, 1:2) %>%
         filter(Var1 != Var2)
       apply(eg, 1, \(inds)
@@ -212,7 +245,7 @@ crossfit_nuisance <- function(
   if (cf_order == 4) {
     pred_df2 <- pred_df
     pred_df2$.pred <- lapply(pred_df$.pred, \(p){
-      stopifnot(length(p$.fold_id) == 3)
+      stopifnot(length(p$.fold_id) == cf_order - 1)
       eg <- expand.grid(1:3, 1:3, 1:3) %>%
         filter(Var1 != Var2, Var1 != Var3, Var2 != Var3)
       apply(eg, 1, \(inds)
