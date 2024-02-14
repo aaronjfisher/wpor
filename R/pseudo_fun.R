@@ -60,12 +60,14 @@ pseudo_U <- function(outcome,
 pseudo_cov <- function(outcome,
                        treatment,
                        .pred_outcome_marginal,
-                       .pred_treatment) {
+                       .pred_treatment,
+                       .pred_control) {
   trt_num <- as.numeric(treatment == 1)
 
   pseudo <-
     (outcome - .pred_outcome_marginal) *
-      (trt_num - .pred_treatment)
+      (trt_num - .pred_treatment) / 
+      (.pred_treatment * .pred_control)
 
   pseudo
 }
