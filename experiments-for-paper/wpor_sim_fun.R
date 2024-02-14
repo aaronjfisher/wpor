@@ -1,5 +1,6 @@
 #renv::install('aaronjfisher/wpor@af/broader-sims')
 #renv::install('..')
+#renv::snapshot()
 #devtools::document('..')
 #devtools::install('..')
 #unloadNamespace('wpor')
@@ -68,7 +69,8 @@ simulate_from_df <- function(
     rhs <- paste(x_terms, collapse = " + ")
     
     treatment_formula <- formula(paste("treatment ~", rhs))
-    outcome_formula <- formula(paste("outcome ~", rhs))
+    outcome_marginal_formula <- formula(paste("outcome ~", rhs))
+    outcome_single_formula <- formula(paste("outcome ~ treatment + ", rhs))
     effect_formula <- formula(paste("pseudo ~", rhs))
 
     if(sim_df$learners[i] == 'rlearner_package'){
@@ -114,9 +116,10 @@ simulate_from_df <- function(
       stopifnot(nrow(pretuned_i) == 1)
       specifications <- pretuned_i$specifications[[1]]
       treatment_wf <- specifications$treatment_wf
-      outcome_1_wf <- specifications$outcome_1_wf
-      outcome_0_wf <- specifications$outcome_0_wf
-      outcome_obs_wf <- specifications$outcome_obs_wf
+      outcome_1_separate_wf <- specifications$outcome_1_separate_wf
+      outcome_0_separate_wf <- specifications$outcome_0_separate_wf
+      outcome_marginal_wf <- specifications$outcome_marginal_wf
+      outcome_single_wf <- specifications$outcome_single_wf
     } else if(sim_df$learners[i] %in% c('parsnip_random_forest', 'parsnip_boost')){
       if(sim_df$learners[i] == 'parsnip_random_forest'){
         mod_spec <- rand_forest(trees = tune(), min_n = tune())
@@ -139,15 +142,20 @@ simulate_from_df <- function(
                          add_model(set_mode(mod_spec, "classification")) %>%
                          add_formula(treatment_formula) %>%
                          tune_params(data = train_data, verbose = verbose, size = size, ...))
-      out_wf <- workflow() %>%
+      out_marginal_wf <- workflow() %>%
         add_model(set_mode(mod_spec, "regression")) %>%
-        add_formula(outcome_formula)
+        add_formula(outcome_marginal_formula)
+      out_single_wf <- workflow() %>%
+        add_model(set_mode(mod_spec, "regression")) %>%
+        add_formula(outcome_single_formula)
       if(verbose) message(Sys.time(),': ','tuning outcome 0...')
-      outcome_0_wf <- tune_params(out_wf, data = filter(train_data, treatment == 0),verbose = verbose, size = size, ...)
+      outcome_0_separate_wf <- tune_params(out_marginal_wf, data = filter(train_data, treatment == 0),verbose = verbose, size = size, ...)
       if(verbose) message(Sys.time(),': ','tuning outcome 1...')
-      outcome_1_wf <- tune_params(out_wf, data = filter(train_data, treatment == 1),verbose = verbose, size = size, ...)
-      if(verbose) message(Sys.time(),': ','tuning outcome obs...')
-      outcome_obs_wf <- tune_params(out_wf, data = train_data, verbose = verbose, size = size, ...)
+      outcome_1_separate_wf <- tune_params(out_marginal_wf, data = filter(train_data, treatment == 1),verbose = verbose, size = size, ...)
+      if(verbose) message(Sys.time(),': ','tuning outcome marginal...')
+      outcome_marginal_wf <- tune_params(out_marginal_wf, data = train_data, verbose = verbose, size = size, ...)
+      if(verbose) message(Sys.time(),': ','tuning outcome single...')
+      outcome_single_wf <- tune_params(out_single_wf, data = train_data, verbose = verbose, size = size, ...)
       effect_wf <- workflow() %>%
         add_model(set_mode(mod_spec, "regression")) %>%
         add_formula(effect_formula) %>%
@@ -165,13 +173,17 @@ simulate_from_df <- function(
       treatment_wf <- lightgbm_spec(formula = treatment_formula, mode = "classification") %>%
         tune_gbm(data = train_data, ...)
 
-      out_wf <- lightgbm_spec(formula = outcome_formula, mode = "regression")
+      out_marginal_wf <- lightgbm_spec(formula = outcome_marginal_formula, mode = "regression")
+      out_single_wf <- lightgbm_spec(formula = outcome_single_formula, mode = "regression")
+      
       if(verbose) message(Sys.time(),': ','tuning outcome 0...')
-      outcome_0_wf <- tune_gbm(out_wf, data = filter(train_data, treatment == 0), ...)
+      outcome_0_separate_wf <- tune_gbm(out_marginal_wf, data = filter(train_data, treatment == 0), ...)
       if(verbose) message(Sys.time(),': ','tuning outcome 1...')
-      outcome_1_wf <- tune_gbm(out_wf, data = filter(train_data, treatment == 1), ...)
-      if(verbose) message(Sys.time(),': ','tuning outcome obs...')
-      outcome_obs_wf <- tune_gbm(out_wf, data = train_data, ...)
+      outcome_1_separate_wf <- tune_gbm(out_marginal_wf, data = filter(train_data, treatment == 1), ...)
+      if(verbose) message(Sys.time(),': ','tuning outcome marginal...')
+      outcome_marginal_wf <- tune_gbm(out_marginal_wf, data = train_data, ...)
+      if(verbose) message(Sys.time(),': ','tuning outcome single...')
+      outcome_single_wf <- tune_gbm(out_single_wf, data = train_data, ...)
       effect_wf <- lightgbm_spec(formula = effect_formula, mode = "regression") %>%
         as.tunefit(verbose = verbose, size = size, grid = lightgbm_grid(size), ...)
 
@@ -184,23 +196,30 @@ simulate_from_df <- function(
         data = train_data,
         control = list(nthread = nthread, num_search_rounds = size)
       )
-      if(verbose) message(Sys.time(),': ','tuning outcome obs...')
-      outcome_obs_wf <- tuned_boost_spec(
-        formula = outcome_formula,
+      if(verbose) message(Sys.time(),': ','tuning outcome marginal...')
+      outcome_marginal_wf <- tuned_boost_spec(
+        formula = outcome_marginal_formula,
+        mode = "regression",
+        data = train_data,
+        control = list(nthread = nthread, num_search_rounds = size)
+      )
+      if(verbose) message(Sys.time(),': ','tuning outcome single...')
+      outcome_single_wf <- tuned_boost_spec(
+        formula = outcome_single_formula,
         mode = "regression",
         data = train_data,
         control = list(nthread = nthread, num_search_rounds = size)
       )
       if(verbose) message(Sys.time(),': ','tuning outcome 1...')
-      outcome_1_wf <- tuned_boost_spec(
-        formula = outcome_formula,
+      outcome_1_separate_wf <- tuned_boost_spec(
+        formula = outcome_marginal_formula,
         mode = "regression",
         data = filter(train_data, treatment == 1),
         control = list(nthread = nthread, num_search_rounds = size)
       )
       if(verbose) message(Sys.time(),': ','tuning outcome 0...')
-      outcome_0_wf <- tuned_boost_spec(
-        formula = outcome_formula,
+      outcome_0_separate_wf <- tuned_boost_spec(
+        formula = outcome_marginal_formula,
         mode = "regression",
         data = filter(train_data, treatment == 0),
         control = list(nthread = nthread, num_search_rounds = size)
@@ -215,9 +234,10 @@ simulate_from_df <- function(
     if(return_specifications){
       sim_df$specifications[[i]] <- list(
         treatment_wf = treatment_wf,
-        outcome_obs_wf = outcome_obs_wf,
-        outcome_1_wf = outcome_1_wf, 
-        outcome_0_wf = outcome_0_wf,
+        outcome_marginal_wf = outcome_marginal_wf,
+        outcome_single_wf = outcome_single_wf,
+        outcome_1_separate_wf = outcome_1_separate_wf, 
+        outcome_0_separate_wf = outcome_0_separate_wf,
         effect_wf = effect_wf
       )
     }
@@ -230,9 +250,10 @@ simulate_from_df <- function(
     
     nuisance_tbl <- crossfit_nuisance(
       data = train_data,
-      outcome_obs_wf = outcome_obs_wf,
-      outcome_1_wf = outcome_1_wf,
-      outcome_0_wf = outcome_0_wf,
+      outcome_marginal_wf = outcome_marginal_wf,
+      outcome_single_wf = outcome_single_wf,
+      outcome_1_separate_wf = outcome_1_separate_wf,
+      outcome_0_separate_wf = outcome_0_separate_wf,
       treatment_wf = treatment_wf,
       min_prob = min_prob,
       v = v,
@@ -241,17 +262,25 @@ simulate_from_df <- function(
     )
     crossfit_time_i <- Sys.time()
     
-    sim_df$crossfit_outcome_obs_mse[i] = with(
+    sim_df$crossfit_outcome_marginal_mse[i] = with(
       nuisance_tbl,
-      mean((outcome - .pred_outcome_obs)^2)
+      mean((outcome - .pred_outcome_marginal)^2)
     )
-    sim_df$crossfit_outcome_1_mse[i] = with(
+    sim_df$crossfit_outcome_1_separate_mse[i] = with(
       filter(nuisance_tbl, treatment == 1),
-      mean((outcome - .pred_outcome_1)^2)
+      mean((outcome - .pred_outcome_1_separate)^2)
     )
-    sim_df$crossfit_outcome_0_mse[i] = with(
+    sim_df$crossfit_outcome_0_separate_mse[i] = with(
       filter(nuisance_tbl, treatment == 0),
-      mean((outcome - .pred_outcome_0)^2)
+      mean((outcome - .pred_outcome_0_separate)^2)
+    )
+    sim_df$crossfit_outcome_1_single_mse[i] = with(
+      filter(nuisance_tbl, treatment == 1),
+      mean((outcome - .pred_outcome_1_single)^2)
+    )
+    sim_df$crossfit_outcome_0_single_mse[i] = with(
+      filter(nuisance_tbl, treatment == 0),
+      mean((outcome - .pred_outcome_0_single)^2)
     )
     sim_df$crossfit_treatment_nll[i] = 
       mean(-log(dbinom(as.numeric(nuisance_tbl$treatment==1), 1, nuisance_tbl$.pred_treatment)))
@@ -267,13 +296,14 @@ simulate_from_df <- function(
     # |_|    \___/|_| \_\
     
     mse_i <- mse_NA
+    
     for(j in 1:nrow(mse_i)){
       if(verbose) message(Sys.time(),': ', mse_i$pseudo[j],', ', mse_i$weights[j])
       if (mse_i$pseudo[j] == 'T') {
         fitted_j <- t_learner(
           data = train_data,
-          outcome_1_wf = outcome_1_wf,
-          outcome_0_wf = outcome_0_wf
+          outcome_1_wf = outcome_1_separate_wf,
+          outcome_0_wf = outcome_0_separate_wf
         )
       } else {
         spec_name_j <- with(mse_i[j,], paste0(pseudo, ':', weights))
