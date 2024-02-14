@@ -6,8 +6,8 @@ size = 20
 alpha = 0.05
 v = 10
 burnin = 3
-nsim <- 250
-nodes <- 3000
+nsim <- 400
+nodes <- 1000
 
 #tuned_df <- readRDS('pretune_results.rds')
 tuned_df <- NULL
@@ -16,18 +16,18 @@ tuned_df <- NULL
 
 
 
-simultaneous <- 60
+simultaneous <- 95
 
 #(job_path <- paste0(Sys.Date(),'_pretuned_parsnip_and_cv_', nsim))
-(job_path <- paste0(Sys.Date(),'_lightgbm_', nsim))
+(job_path <- paste0(Sys.Date(),'_narrow_', nsim))
 #(job_path <- paste0(Sys.Date(),'_crossfit_test_', nsim))
 (slurm_dir <- paste0('_rslurm_', gsub('-','', job_path),'/'))
 
 
 
 results_tbl <- expand.grid(
-  learners = c('parsnip_random_forest','lightgbm','cvboost','rlearner_package'), #'parsnip_boost', 'lightgbm'
-  n_obs = c(250,500,1000, 2000),#, 1000, 250
+  learners = 'lightgbm', #c('parsnip_random_forest','lightgbm','cvboost','rlearner_package'), # !! NARROW !!
+  n_obs = c(250,500,1000),
   p = c(10),
   sigma = 1,#c(0.5, 1, 2),#, 3),
   setup = c('A','B','C','D','E','F'),
@@ -36,9 +36,11 @@ results_tbl <- expand.grid(
   tune_time = NA,
   crossfit_time = NA,
   por_time = NA,
-  crossfit_outcome_obs_mse = NA,
-  crossfit_outcome_1_mse = NA,
-  crossfit_outcome_0_mse = NA,
+  crossfit_outcome_marginal_mse = NA,
+  crossfit_outcome_1_separate_mse = NA,
+  crossfit_outcome_0_separate_mse = NA,
+  crossfit_outcome_1_single_mse = NA,
+  crossfit_outcome_0_single_mse = NA,
   crossfit_treatment_nll = NA
 ) %>% 
   tibble() %>%
@@ -49,14 +51,17 @@ results_tbl$mse <- vector('list', nrow(results_tbl))
 nrow(results_tbl)/nodes
 
 mse_NA <- expand.grid(
-  pseudo = c('pseudo_U','pseudo_DR','T'),
+  pseudo = c('pseudo_U',
+             'pseudo_DR_single',
+             #'pseudo_DR_separate', #!! NARROW
+             'T'),
   weights = c(
     'weight_1'
-    ,'weight_U_X' 
+    #,'weight_U_X' #!! NARROW !!
     ,'weight_U_AX'
     ,'weight_DR_X'
-    ,'weight_DR_AX'
-    ,'weight_DR_alt_AX'
+    #,'weight_DR_AX' #!! NARROW !!
+    #,'weight_DR_alt_AX' #!! NARROW !!
   ),
   mse = NA,
   stringsAsFactors = FALSE
@@ -66,8 +71,10 @@ mse_NA <- expand.grid(
     !(pseudo == 'pseudo_U' & weights == 'weight_DR_X'),
     !(pseudo == 'pseudo_U' & weights == 'weight_DR_AX'),
     !(pseudo == 'pseudo_U' & weights == 'weight_DR_alt_AX'),
-    !(pseudo == 'pseudo_DR' & weights == 'weight_U_X'),
-    !(pseudo == 'pseudo_DR' & weights == 'weight_U_AX')
+    !(pseudo == 'pseudo_DR_single' & weights == 'weight_U_X'),
+    !(pseudo == 'pseudo_DR_single' & weights == 'weight_U_AX'),
+    !(pseudo == 'pseudo_DR_separate' & weights == 'weight_U_X'),
+    !(pseudo == 'pseudo_DR_separate' & weights == 'weight_U_AX')
   ) %>%
   arrange(pseudo, weights) %>%
   as_tibble()
@@ -88,9 +95,10 @@ tail(results_list,1)
 mse_NA
 
 if(FALSE){
-  #workspace for testing
+  # workspace for testing
+  # source('wpor_sim_fun.R')
   s1 <- simulate_from_df(
-    sim_df = results_tbl[1,],
+    sim_df = results_tbl[10,],
     pretuned = tuned_df,
     mse_NA = mse_NA,
     verbose = TRUE,
@@ -111,16 +119,15 @@ if(FALSE){
     job_array_task_limit = simultaneous,
     pkgs = c("wpor", "dplyr", "tidymodels", "pbapply", "rlearner", "workflows", "lightgbm"),
     jobname = job_path,
-    cpus_per_node = 1, 
-      # avoid mclapply as it's harder to debug than standard 
-      # slurm multi-core parallelization, 
-      # and even when you're allocated more cores, it doesn't go faster. 
+    cpus_per_node = 96, 
+    r_template = 'slurm_map_renv.txt',
+    libPaths = .libPaths(),
     slurm_options = list(
-      partition = 'M-16Cpu-123GB'
+      partition = 'M-96Cpu-742GB'
       ,'mail-user'=Sys.getenv('USEREMAIL')
       ,'mail-type'='ALL'
       #,'exclusive'=TRUE
-      ,mem = '6G'# mem to be shared across all CPUs on each node.
+      ,mem = '700G'# mem to be shared across all CPUs on each node.
     ),
     mse_NA = mse_NA,
     size = size, alpha = alpha, v = v, burnin = burnin,
@@ -186,7 +193,7 @@ system(paste(
 ## 20231110_parsnip_ivw_100: Req: 120G; Avg: 160. Need fewer cpus per node? None crashed though.
 
 sum(grepl('.RDS', dir(slurm_dir))) # number of completed jobs
-# slurm_dir <- "_rslurm_20231127_activetune_200/"
+# slurm_dir = "_rslurm_20240202_narrow_400/"
 # sjob <- readRDS(paste0(slurm_dir, 'sjob.rds'))
 job_out <- get_slurm_out(sjob, "raw", wait = FALSE)
 results <- do.call(rbind, job_out)

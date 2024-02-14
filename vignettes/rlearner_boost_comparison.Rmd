@@ -43,7 +43,8 @@ x_terms <- cn[starts_with("x.", vars = cn)]
 rhs <- paste(x_terms, collapse = " + ")
 
 treatment_formula <- formula(paste("treatment ~", rhs))
-outcome_formula <- formula(paste("outcome ~", rhs))
+outcome_marginal_formula <- formula(paste("outcome ~", rhs))
+outcome_single_formula <- formula(paste("outcome ~ treatment + ", rhs))
 effect_formula <- formula(paste("pseudo ~", rhs))
 
 
@@ -53,8 +54,14 @@ treatment_wf <- tuned_boost_spec(
   data = train_data,
   control = list(nthread = 1)
 )
-outcome_wf <- tuned_boost_spec(
-  formula = outcome_formula,
+outcome_marginal_wf <- tuned_boost_spec(
+  formula = outcome_marginal_formula,
+  mode = "regression",
+  data = train_data,
+  control = list(nthread = 1)
+)
+outcome_single_wf <- tuned_boost_spec(
+  formula = outcome_single_formula,
   mode = "regression",
   data = train_data,
   control = list(nthread = 1)
@@ -67,7 +74,7 @@ effect_wf <- cvboost_spec(
 
 
 treatment_wf
-outcome_wf
+outcome_marginal_wf
 effect_wf
 ```
 
@@ -76,7 +83,8 @@ effect_wf
 ```{r fit_wpor}
 nuisance_tbl <- crossfit_nuisance(
   data = train_data,
-  outcome_obs_wf = outcome_wf,
+  outcome_marginal_wf = outcome_marginal_wf,
+  outcome_single_wf = outcome_single_wf,
   treatment_wf = treatment_wf,
   min_prob = 0.01,
   v = 5,
@@ -126,7 +134,7 @@ plot(wpor_pred, pred_rboost, asp = 1)
 
 
 
-t_learner_wf <- cvboost_spec(outcome_formula, "regression")
+t_learner_wf <- cvboost_spec(outcome_marginal_formula, "regression")
 t_learner_fitted <- t_learner(train_data, t_learner_wf)
 mean(
   (predict(t_learner_fitted, test_data) - test_list$params$tau)^2

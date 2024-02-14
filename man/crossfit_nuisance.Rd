@@ -8,9 +8,10 @@
 crossfit_nuisance(
   data,
   treatment_wf,
-  outcome_obs_wf,
-  outcome_1_wf = outcome_obs_wf,
-  outcome_0_wf = outcome_obs_wf,
+  outcome_marginal_wf,
+  outcome_single_wf,
+  outcome_1_separate_wf = outcome_marginal_wf,
+  outcome_0_separate_wf = outcome_marginal_wf,
   min_prob = 0.01,
   v = 10,
   cf_order = 2,
@@ -31,8 +32,12 @@ fit_wpor(
 \arguments{
 \item{data}{a data.frame or tibble containing columns \code{treatment} and \code{outcome}.}
 
-\item{outcome_1_wf, outcome_0_wf, outcome_obs_wf, treatment_wf}{tidmodel workflows for each modeling step. These should have formulas with
-\code{outcome} and \code{treatment} on the left-hand side, respectively.}
+\item{outcome_1_separate_wf, outcome_0_separate_wf, outcome_single_wf, outcome_marginal_wf, treatment_wf}{tidymodel workflows
+for each modeling step. These should have formulas
+with \code{outcome} or \code{treatment} on the left-hand side.
+The formula for \code{outcome_single_wf} should include
+\code{treatment} on the right-hand side, but no other formulas
+should include treatment as a covariate.}
 
 \item{min_prob}{a truncation probability for the propensity scores.}
 
@@ -54,7 +59,7 @@ supplied.}
 \item{effect_wf}{A workflow for fitting the final effect (pseudo-outcome) model.}
 }
 \value{
-a tibble of nuisance predictions. If cf_order is >2, there will be more than 1 prediction per row of \code{data}. The tibble contains: \code{.row}, the row index of \code{data}; \code{.fold_id}, the fold used to train the predictions; \code{.pred_treatment}, the predicted probability of treatment; \code{.pred_control}, the predicted probability of control (equal to 1-.pred_treatment if cf_order <= 3); \code{.pred_outcome_0} the predicted outcome under treatment == 0, \code{.pred_outcome_1} the predicted outcome under treatment == 1; \code{.pred_outcome_obs} the predicted outcome under the observed treatment, i.e., marginalizing over treatment.
+a tibble of nuisance predictions. If cf_order is >2, there will be more than 1 prediction per row of \code{data}. The tibble contains: \code{.row}, the row index of \code{data}; \code{.fold_id}, the fold used to train the predictions; \code{.pred_treatment}, the predicted probability of treatment; \code{.pred_control}, the predicted probability of control (equal to 1-.pred_treatment if cf_order <= 3); \code{.pred_outcome_0_separate} the predicted outcome under treatment == 0, \code{.pred_outcome_1_separate} the predicted outcome under treatment == 1; \code{.pred_outcome_marginal} the predicted outcome under the observed treatment, i.e., marginalizing over treatment.
 
 a fitted model; the output of \code{workflows:::fit.workflow}
 }
