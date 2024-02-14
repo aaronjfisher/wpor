@@ -1,3 +1,17 @@
 _rslurm_*
 *.rds
 *.yaml
+Rplots.pdf
+compile_results.R
+parsnip-xgb-weights-fail.R
+plot_multiway_crossfit_results.R
+pre-tune-all.R
+pre-tune-parsnip.R
+sbatch_ivw.sh
+setup-sbatch.R
+test-weights-tune.R
+test-weights-wpoer.R
+test_crashes.R
+test_image.rdata
+wpor_sim_fun-parsnip.R
+wpor_sim_sbatch.R
