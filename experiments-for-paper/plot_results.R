@@ -1,16 +1,13 @@
 library(tidyverse)
+library(latex2exp)
 
 # job_path <- '2023-11-19_pretuned_cvboost_100'
 # job_path <- '2023-11-20_cvboost_active-tune_200'
 # job_path <- '2023-11-24_parsnip_boost_active-tune_100'
 # job_path <- '2023-11-23_pretuned_parsnip_and_cv_200'
 #job_path <- '2023-11-27_parsnip_boost_active-tune_mini-test_100'
-# job_path <- '2023-11-27_active-tune_200'
-# job_path <- '2023-12-03_active-tune_100'
-# job_path <- '2023-12-04_lightgbm_250'
-# job_path <- '2024-01-27_lightgbm_250'
-#job_path <- '2024-01-31_single_250'
-job_path <- '2024-02-02_narrow_400'
+
+job_path <- '2024-02-02_full_600'
 slurm_dir <- paste0('_rslurm_', gsub('-','', job_path),'/')
 results <- readRDS(paste0(slurm_dir, 'combined_results.rds'))
 str(readRDS(paste0(slurm_dir, 'more_args.RDS')))
@@ -31,7 +28,7 @@ sum_results <- results %>%
   summarize(mean_mse = mean(mse),
             n_sim = n(),
             se_mse = sd(mse)/sqrt(n()),
-            lower_mse = pmax(0.01, mean_mse - qnorm(0.975) * se_mse),
+            lower_mse = pmax(0.0001, mean_mse - qnorm(0.975) * se_mse),
             upper_mse = mean_mse + qnorm(0.975) * se_mse) %>%
   mutate(
     n_obs = as.numeric(n_obs)
@@ -45,15 +42,26 @@ mypdf <- function(file, ...){
   pdf(file= paste0('plots/',Sys.Date(),'_', file,'.pdf'), ...)
 }
 
-weight_labels = 
+
+#https://uliniemann.com/blog/2022-02-21-math-annotations-in-ggplot2-with-latex2exp/
+#TeX(r"($(A-\hat{\pi}(X))^2$ )")
+
+# weight_labels = 
+#   list('weight_1' = 1,
+#        'weight_U_AX' = expression('Var(U|A,X)'^{-1}),
+#        'weight_U_X' = expression('Var(U|X)'^{-1}),
+#        'weight_DR_AX' = expression('Var(DR|A,X)'^{-1}),
+#        'weight_DR_X' = expression('Var(DR|X)'^{-1}))
+weight_simple_labels = 
   list('weight_1' = 1,
-       'weight_U_AX' = expression('Var(U|A,X)'^{-1}),
-       'weight_U_X' = expression('Var(U|X)'^{-1}),
-       'weight_DR_AX' = expression('Var(DR|A,X)'^{-1}),
-       'weight_DR_X' = expression('Var(DR|X)'^{-1}))
+       'weight_U_AX' = TeX(r"($(\textit{A}-\hat{\pi}(\textit{X}))^2$ )"),
+       'weight_DR_X' = TeX(r"(\hat{\pi}(\textit{X})\,(1-\hat{\pi}(\textit{X})))"))
+
+
 
 
 mypdf(paste0('main-comparison_',my_learner), width = 4.5, height = 8.5)
+
 sum_results %>%
   filter(
          pseudo != 'rlearner_package',
@@ -66,8 +74,8 @@ sum_results %>%
   geom_line(aes(group = weights)) + 
   geom_ribbon(aes(ymin = log(lower_mse), ymax = log(upper_mse)), alpha = .3, col=NA) +
   facet_grid(setup~pseudo) + theme_bw() +
-  scale_fill_discrete('Weights', labels = weight_labels) +
-  scale_colour_discrete('Weights', labels = weight_labels) +
+  scale_fill_discrete('Weights', labels = weight_simple_labels) +
+  scale_colour_discrete('Weights', labels = weight_simple_labels) +
   labs(
     #title = paste('Log MSE on Simulated Data -', my_learner),
     x= 'Sample size (n)',
@@ -75,6 +83,43 @@ sum_results %>%
   ) +
   theme(legend.position = 'bottom')
 dev.off()
+
+
+
+mypdf(paste0('poster-comparison_',my_learner,'-E'), width = 5, height =2.5)
+sum_results %>%
+  filter(
+    pseudo %in% c('DR','U'),
+    learners == my_learner,
+    setup == 'E'
+    ,weights %in% c('weight_1', 'weight_U_AX','weight_DR_X')
+  ) %>%
+  ggplot(aes(x = n_obs, y = log(mean_mse), 
+             col = weights, fill = weights)) +
+  geom_line(aes(group = weights)) + 
+  geom_ribbon(aes(ymin = log(lower_mse), ymax = log(upper_mse)), alpha = .3, col=NA) +
+  facet_grid(.~pseudo) + theme_bw() +
+  scale_fill_discrete('Weights', labels = weight_simple_labels) +
+  scale_colour_discrete('Weights', labels = weight_simple_labels) +
+  labs(
+    #title = paste('Log MSE on Simulated Data -', my_learner),
+    x= 'Sample size',
+    y= 'Log(mean squared error)'
+  ) +
+  theme(legend.position = 'right')
+dev.off()
+
+
+weight_expanded_labels = 
+  list('weight_1' = 1,
+       'weight_U_AX' = TeX(r"($(A-\hat{\pi}^2)$ )"),
+       'weight_U_X' = TeX(r"($\frac{(\hat{\pi}\hat{\kappa})^{2}}{\hat{\pi}^{3}+\hat{\kappa}^{3}}$ )"),
+       'weight_DR_AX' = TeX(
+         r"(\frac{A}{\hat{\pi}^{2}}+\frac{1-A}{\hat{\kappa}^{2}})"
+         ),
+       'weight_DR_X' = TeX(r"(\hat{\nu})"))
+
+
 
 mypdf(paste0('expanded-comparison_',my_learner), width = 6, height = 8.5)
 sum_results %>%
@@ -87,10 +132,10 @@ sum_results %>%
   ggplot(aes(x = n_obs, y = log(mean_mse), 
              col = weights, fill = weights)) +
   geom_line(aes(group = weights)) + 
-  #geom_ribbon(aes(ymin = log(lower_mse), ymax = log(upper_mse)), alpha = .3, col=NA) + #!! NARROW !!
+  geom_ribbon(aes(ymin = log(lower_mse), ymax = log(upper_mse)), alpha = .3, col=NA) + #!! NARROW !!
   facet_grid(setup~pseudo) + theme_bw() +
-  scale_fill_discrete('Weights', labels = weight_labels) +
-  scale_colour_discrete('Weights', labels = weight_labels) +
+  scale_fill_discrete('Weights', labels = weight_expanded_labels) +
+  scale_colour_discrete('Weights', labels = weight_expanded_labels) +
   labs(
     title = paste('Log MSE on Simulated Data -', my_learner),
     x= 'Sample size (n)',
@@ -128,10 +173,10 @@ dev.off()
 
 ## T learners does similar to DR on E,F, slightly better on D, but much worse on A,B,C.
 sum_results %>%
-  filter(pseudo %in% c('DR','T'),
-         weights %in% c('weight_1','weight_DR_X'),
+  filter( (pseudo == 'DR' & weights == 'weight_DR_X') |
+          (pseudo == 'T' & weights == 'weight_1'),
          learners == my_learner) %>%
-  ggplot(aes(x = n_obs, y = log(mean_mse), lty = weights, col = pseudo)) +
+  ggplot(aes(x = n_obs, y = log(mean_mse), col = pseudo, fill = pseudo)) +
   geom_line() + 
   facet_grid(setup~.) +
   geom_ribbon(aes(ymin = log(lower_mse), ymax = log(upper_mse), col = pseudo, group = paste0(weights,pseudo)), alpha = .3, col = NA) 
