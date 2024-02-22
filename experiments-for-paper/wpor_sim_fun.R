@@ -86,7 +86,9 @@ simulate_from_df <- function(
       mse_i <- tibble(
         pseudo='pseudo_U',
         weights = 'weight_U_AX',
-        mse =  mean( ( pred - test_list$params$tau )^2 ))
+        pred_mse =  mean( ( pred - test_list$params$tau )^2 ),
+        ate_error =  mean(pred) - mean(test_list$params$tau)
+        )
 
       sim_df$mse[[i]] <- mse_i
       sim_df$tune_time[i] <- 0
@@ -342,7 +344,8 @@ simulate_from_df <- function(
       
       
       pred <- predict_expected_value(fitted_j, test_data)
-      mse_i$mse[j] <- mean( ( pred - test_list$params$tau )^2 )
+      mse_i$pred_mse[j] <- mean( ( pred - test_list$params$tau )^2 )
+      mse_i$ate_error[j] =  mean(pred) - mean(test_list$params$tau)
 
     }
     stopifnot(all(dim(mse_NA) == dim(mse_i)))

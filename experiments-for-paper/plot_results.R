@@ -1,35 +1,32 @@
 library(tidyverse)
 library(latex2exp)
 
-# job_path <- '2023-11-19_pretuned_cvboost_100'
-# job_path <- '2023-11-20_cvboost_active-tune_200'
-# job_path <- '2023-11-24_parsnip_boost_active-tune_100'
-# job_path <- '2023-11-23_pretuned_parsnip_and_cv_200'
-#job_path <- '2023-11-27_parsnip_boost_active-tune_mini-test_100'
+#job_path <- '2024-02-14_cov_250'
+job_path <- '2024-02-15_cov_600'
 
-job_path <- '2024-02-02_full_600'
 slurm_dir <- paste0('_rslurm_', gsub('-','', job_path),'/')
 results <- readRDS(paste0(slurm_dir, 'combined_results.rds'))
 str(readRDS(paste0(slurm_dir, 'more_args.RDS')))
 
 sum_results <- results %>%
   filter(!is.na(setup)) %>%
-  tidyr::unnest(mse) %>%
+  tidyr::unnest(pred_mse) %>%
   mutate(pseudo = ifelse(pseudo=='pseudo_DR_single', 'DR', pseudo)) %>%
+  mutate(pseudo = ifelse(pseudo=='pseudo_cov', 'Cov', pseudo)) %>%
   mutate(pseudo = ifelse(pseudo=='pseudo_U', 'U', pseudo)) %>%
   mutate(pseudo = factor(
     pseudo, 
-    levels = c('DR', 'pseudo_DR_separate', 'U', 'T'))
+    levels = c('DR','Cov', 'pseudo_DR_separate', 'U', 'T'))
   ) %>%
   group_by(
     n_obs, learners, p, 
     sigma, setup, nuisance, 
     pseudo, weights) %>%
-  summarize(mean_mse = mean(mse),
+  summarize(mean_pred_mse = mean(pred_mse),
             n_sim = n(),
-            se_mse = sd(mse)/sqrt(n()),
-            lower_mse = pmax(0.0001, mean_mse - qnorm(0.975) * se_mse),
-            upper_mse = mean_mse + qnorm(0.975) * se_mse) %>%
+            se_pred_mse = sd(pred_mse)/sqrt(n()),
+            lower_pred_mse = pmax(0.0001, mean_pred_mse - qnorm(0.975) * se_pred_mse),
+            upper_pred_mse = mean_pred_mse + qnorm(0.975) * se_pred_mse) %>%
   mutate(
     n_obs = as.numeric(n_obs)
     )
@@ -66,13 +63,13 @@ sum_results %>%
   filter(
          pseudo != 'rlearner_package',
          learners == my_learner,
-         pseudo %in% c('DR','U','T')
+         pseudo %in% c('DR','Cov','U','T')
          ,weights %in% c('weight_1', 'weight_U_AX','weight_DR_X')
          ) %>%
-  ggplot(aes(x = n_obs, y = log(mean_mse), 
+  ggplot(aes(x = n_obs, y = log(mean_pred_mse), 
              col = weights, fill = weights)) +
   geom_line(aes(group = weights)) + 
-  geom_ribbon(aes(ymin = log(lower_mse), ymax = log(upper_mse)), alpha = .3, col=NA) +
+  geom_ribbon(aes(ymin = log(lower_pred_mse), ymax = log(upper_pred_mse)), alpha = .3, col=NA) +
   facet_grid(setup~pseudo) + theme_bw() +
   scale_fill_discrete('Weights', labels = weight_simple_labels) +
   scale_colour_discrete('Weights', labels = weight_simple_labels) +
@@ -94,10 +91,10 @@ sum_results %>%
     setup == 'E'
     ,weights %in% c('weight_1', 'weight_U_AX','weight_DR_X')
   ) %>%
-  ggplot(aes(x = n_obs, y = log(mean_mse), 
+  ggplot(aes(x = n_obs, y = log(mean_pred_mse), 
              col = weights, fill = weights)) +
   geom_line(aes(group = weights)) + 
-  geom_ribbon(aes(ymin = log(lower_mse), ymax = log(upper_mse)), alpha = .3, col=NA) +
+  geom_ribbon(aes(ymin = log(lower_pred_mse), ymax = log(upper_pred_mse)), alpha = .3, col=NA) +
   facet_grid(.~pseudo) + theme_bw() +
   scale_fill_discrete('Weights', labels = weight_simple_labels) +
   scale_colour_discrete('Weights', labels = weight_simple_labels) +
@@ -129,10 +126,10 @@ sum_results %>%
     pseudo %in% c('DR','U','T')
     ,weights %in% c('weight_1', 'weight_U_AX','weight_DR_X','weight_DR_AX','weight_U_X')
   ) %>%
-  ggplot(aes(x = n_obs, y = log(mean_mse), 
+  ggplot(aes(x = n_obs, y = log(mean_pred_mse), 
              col = weights, fill = weights)) +
   geom_line(aes(group = weights)) + 
-  geom_ribbon(aes(ymin = log(lower_mse), ymax = log(upper_mse)), alpha = .3, col=NA) + #!! NARROW !!
+  geom_ribbon(aes(ymin = log(lower_pred_mse), ymax = log(upper_pred_mse)), alpha = .3, col=NA) + #!! NARROW !!
   facet_grid(setup~pseudo) + theme_bw() +
   scale_fill_discrete('Weights', labels = weight_expanded_labels) +
   scale_colour_discrete('Weights', labels = weight_expanded_labels) +
@@ -152,8 +149,8 @@ results_table <- sum_results %>%
     learners == my_learner,
     n_obs == 1000) %>%
   ungroup() %>%
-  mutate(log_mse_lab = paste0(signif(log(mean_mse), 2), ' (',signif(log(lower_mse), 2), ', ', signif(log(upper_mse), 2),')')) %>%
-  select(setup, pseudo, weights, log_mse_lab)
+  mutate(log_pred_mse_lab = paste0(signif(log(mean_pred_mse), 2), ' (',signif(log(lower_pred_mse), 2), ', ', signif(log(upper_pred_mse), 2),')')) %>%
+  select(setup, pseudo, weights, log_pred_mse_lab)
 
 results_table
 
@@ -165,9 +162,9 @@ sum_results %>%
         learners == my_learner,
          pseudo %in% c('DR','pseudo_DR_separate','U'),
          weights %in% c('weight_U_AX', 'weight_DR_X')) %>% 
-  ggplot(aes(x = n_obs, y = log(mean_mse), col = weights, lty = pseudo, fill = weights)) +
+  ggplot(aes(x = n_obs, y = log(mean_pred_mse), col = weights, lty = pseudo, fill = weights)) +
   geom_line() + 
-  geom_ribbon(aes(ymin = log(lower_mse), ymax = log(upper_mse), col = weights), alpha = .3, col = NA) +
+  geom_ribbon(aes(ymin = log(lower_pred_mse), ymax = log(upper_pred_mse), col = weights), alpha = .3, col = NA) +
   facet_grid(setup~.)
 dev.off()
 
@@ -176,10 +173,10 @@ sum_results %>%
   filter( (pseudo == 'DR' & weights == 'weight_DR_X') |
           (pseudo == 'T' & weights == 'weight_1'),
          learners == my_learner) %>%
-  ggplot(aes(x = n_obs, y = log(mean_mse), col = pseudo, fill = pseudo)) +
+  ggplot(aes(x = n_obs, y = log(mean_pred_mse), col = pseudo, fill = pseudo)) +
   geom_line() + 
   facet_grid(setup~.) +
-  geom_ribbon(aes(ymin = log(lower_mse), ymax = log(upper_mse), col = pseudo, group = paste0(weights,pseudo)), alpha = .3, col = NA) 
+  geom_ribbon(aes(ymin = log(lower_pred_mse), ymax = log(upper_pred_mse), col = pseudo, group = paste0(weights,pseudo)), alpha = .3, col = NA) 
 dev.off()
 
 filter(results_table,
@@ -191,7 +188,7 @@ sum_results %>%
   filter(learners %in% c('cvboost','rlearner_package','lightgbm'),
          pseudo %in% c('U','rlearner_package'),
          weights %in% c('weights_U_AX', 'weight_U_AX')) %>% 
-  ggplot(aes(x = n_obs, y = (mean_mse), col = learners, lty = learners)) +
+  ggplot(aes(x = n_obs, y = (mean_pred_mse), col = learners, lty = learners)) +
   geom_line() + 
   facet_grid(setup~.)
 dev.off()
@@ -201,7 +198,7 @@ dev.off()
 sum_results %>%
   filter(pseudo%in%c('DR','pseudo_DR_separate'),
          learners == my_learner) %>%
-  ggplot(aes(x = n_obs, y = log(mean_mse), col = weights)) +
+  ggplot(aes(x = n_obs, y = log(mean_pred_mse), col = weights)) +
   geom_line() + 
   facet_grid(pseudo~setup)
 dev.off()
@@ -209,7 +206,7 @@ dev.off()
 ### U learners generally do best when weighting by AX, and worst when weighting by 1
 sum_results %>%
   filter(pseudo == 'U', learners == my_learner) %>%
-  ggplot(aes(x = n_obs, y =log(mean_mse), col = weights)) +
+  ggplot(aes(x = n_obs, y =log(mean_pred_mse), col = weights)) +
   geom_line() + 
   facet_grid(pseudo~setup)
 dev.off()
