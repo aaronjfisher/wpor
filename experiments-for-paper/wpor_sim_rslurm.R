@@ -6,7 +6,7 @@ size = 20
 alpha = 0.05
 v = 10
 burnin = 3
-nsim <- 200
+nsim <- 500
 nodes <- 1000
 
 #tuned_df <- readRDS('pretune_results.rds')
@@ -18,14 +18,14 @@ tuned_df <- NULL
 
 simultaneous <- 50
 
-(job_path <- paste0(Sys.Date(),'_ate_', nsim))
+(job_path <- paste0(Sys.Date(),'_ate_rfgbm_', nsim))
 
 (slurm_dir <- paste0('_rslurm_', gsub('-','', job_path),'/'))
 
 
 
 results_tbl <- expand.grid(
-  learners = c('lightgbm'), #'parsnip_random_forest', 'rlearner_package' ,'cvboost'
+  learners = c('lightgbm','parsnip_random_forest'), #, 'rlearner_package' ,'cvboost'
   n_obs = c(250,500,1000),
   p = c(10),
   sigma = 1,#c(0.5, 1, 2),#, 3),
@@ -64,13 +64,14 @@ mse_NA <- expand.grid(
     #,'weight_DR_alt_AX' #!! NARROW !!
   ),
   pred_mse = NA,
-  ate_error = NA,
+  avg_pred_ate_se = NA,
+  weighted_avg_PO_ate_se = NA,
   stringsAsFactors = FALSE
 ) %>%
   filter(
     !(pseudo == 'T' & weights != 'weight_1'),
     (pseudo != 'pseudo_cov' | weights %in%
-       c('weight_DR_X', 'weight_1')),
+       c('weight_DR_X', 'weight_1','sample_avg')),
     !(pseudo == 'pseudo_U' & weights == 'weight_DR_X'),
     !(pseudo == 'pseudo_U' & weights == 'weight_DR_AX'),
     !(pseudo == 'pseudo_U' & weights == 'weight_DR_alt_AX'),
@@ -99,9 +100,9 @@ mse_NA
 
 if(FALSE){
   # workspace for testing
-  # source('wpor_sim_fun.R')
+  source('wpor_sim_fun.R')
   s1 <- simulate_from_df(
-    sim_df = results_tbl[9,],
+    sim_df = results_tbl[8,],
     pretuned = tuned_df,
     mse_NA = mse_NA,
     verbose = TRUE,
@@ -141,39 +142,8 @@ if(FALSE){
 }
 
 
-# ## !! pure mclapply doesn't seem to work well! too slow.
-# library(parallel)
-# (cores <- ceiling(detectCores() *.8))
-# cl <- makePSOCKcluster(cores)
-# 
-# 
-# mc_out <- parLapply(
-#   cl = cl,
-#   X = results_list,
-#   fun = simulate_from_df,
-#   #size = size,
-#   #mc.cores = cores,
-#   mse_NA = mse_NA,
-#   pretuned = tuned_df,
-#   verbose = TRUE
-# )
-# stopCluster(cl)
-# saveRDS(mc_out, 'test_mc.rds')
-# 
-# mc_out <- mclapply(
-#   results_list,
-#   simulate_from_df,
-#   mc.cores = cores,
-#   mse_NA = mse_NA,
-#   pretuned = tuned_df,
-#   verbose = FALSE
-# )
-# mc_out <- parLapply(
-#   cl = cl,
-#   X = list(a=1, b=2), 
-#   fun = function(a) a %>% print
-# )
 
+if(FALSE){
 job_tbl <- tibble(get_job_status(sjob)[[2]])
 job_tbl$time <- NA
 job_tbl$time[nchar(job_tbl$TIME) %in% c(4,5)] <- 
@@ -184,7 +154,7 @@ job_tbl$time[nchar(job_tbl$TIME) %in% c(7,8)] <-
 to_cancel <- filter(job_tbl, time > 70)$JOBID
 for(jname in to_cancel) system(paste('scancel', jname))
 message('cancelled ', length(to_cancel), ' tasks')
-
+}
 
 # sacct -j 484153 --format jobid%15,AveVMSize,MaxVMsize,ReqCPUS,AllocCPUS,ReqMem,state,Elapsed --units=G 
 message('\n-- Resources used by array job: --\n')
@@ -195,7 +165,7 @@ system(paste(
 ))
 ## 20231110_parsnip_ivw_100: Req: 120G; Avg: 160. Need fewer cpus per node? None crashed though.
 
-sum(grepl('.RDS', dir(slurm_dir))) # number of completed jobs
+sum(grepl('.RDS', dir(slurm_dir))) - 3 # number of completed jobs
 # sjob <- readRDS(paste0(slurm_dir, 'sjob.rds'))
 job_out <- get_slurm_out(sjob, "raw", wait = FALSE)
 results <- do.call(rbind, job_out)
@@ -205,3 +175,4 @@ results <- do.call(rbind, job_out)
 # }
 
 saveRDS(results, paste0(slurm_dir, 'combined_results.rds'))
+

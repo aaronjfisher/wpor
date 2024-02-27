@@ -345,8 +345,20 @@ simulate_from_df <- function(
       
       pred <- predict_expected_value(fitted_j, test_data)
       mse_i$pred_mse[j] <- mean( ( pred - test_list$params$tau )^2 )
-      mse_i$ate_error[j] =  mean(pred) - mean(test_list$params$tau)
-
+      
+      # ATE estimates
+      true_ate <- mean(test_list$params$tau)
+      mse_i$avg_pred_ate_se[j] =  (mean(pred) - true_ate)^2
+      if(mse_i$pseudo[j] != 'T'){
+        POs_i <- nuisance_tbl[,formalArgs(mse_i$pseudo[j])] %>%
+          do.call(mse_i$pseudo[j], .)
+        weights_i <- nuisance_tbl[,formalArgs(mse_i$weights[j])] %>%
+          do.call(mse_i$weights[j], .)
+        mse_i$weighted_avg_PO_ate_se[j] =  (
+          weighted.mean(POs_i, weights_i) 
+          - true_ate
+        )^2
+      }
     }
     stopifnot(all(dim(mse_NA) == dim(mse_i)))
     por_time_i <- Sys.time()
