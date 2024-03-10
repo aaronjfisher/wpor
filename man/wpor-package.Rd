@@ -6,6 +6,6 @@
 \alias{wpor-package}
 \title{wpor: Weighted pseudo-outcome regression}
 \description{
-What the package does (one paragraph).
+This package implements the weighted pseudo-outcome regression methods discussed in https://arxiv.org/abs/2307.09700. For nuisance training methods, users can either input workflows from the tidymodels set of packages or define their own training algorithms.
 }
 \keyword{internal}
