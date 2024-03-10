@@ -58,6 +58,14 @@ sim_data <- function(setup, n, p, sigma) {
       list(X = X, b = b, tau = tau, e = e)
     }
   } else if (setup == "G") {
+    get.params <- function() {
+      X <- matrix(rnorm(n * p), n, p)
+      tau <- 2 * log(1 + exp(X[, 1] + X[, 2] + X[, 3]))
+      e <- 1 / (1 + exp(X[, 2] + X[, 3]))
+      b <- rep(1, n)
+      list(X = X, b = b, tau = tau, e = e)
+    }
+  } else if (setup == "E2") {
     ## experimental, pending Edward's comments
     get.params <- function() {
       expit <- function(x) {
