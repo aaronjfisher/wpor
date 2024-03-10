@@ -182,16 +182,16 @@ crossfit_nuisance <- function(
     nest(.by = .row) %>%
     rename(.pred = data)
 
-  # For any given training observation, we will have 
-  # (cf_order-1) nuisance model predictions, each from 
+  # For any given training observation, we will have
+  # (cf_order-1) nuisance model predictions, each from
   # a separate fold.
-  # pred_df$.pred[[i]] contains a tibble of these nuisance predictions 
-  
+  # pred_df$.pred[[i]] contains a tibble of these nuisance predictions
+
   # pred_df2, defined below, will have a column .pred that contains all
   # (cf_order - 1)-way combinations of nuisance estimates.
   # These combinations will be labeled in `.fold_id` according
   # to the folds of pred_df that were combined to produce them.
-  
+
   if (cf_order == 2) {
     pred_df2 <- pred_df
     pred_df2$.pred <- lapply(pred_df$.pred, \(p){
@@ -256,6 +256,8 @@ crossfit_nuisance <- function(
 #' @param pseudo_fun the pseudo-outcome function. See pseudo_fun.R
 #' @param weight_fun the weighting function. See weight_fun.R#'
 #' @param effect_wf A workflow for fitting the final effect (pseudo-outcome) model.
+#' This workflow should expect the pseudo-outcome to be stored in
+#' a data column labeled "pseudo".
 #' @returns a fitted model; the output of `workflows:::fit.workflow`
 #' @rdname crossfit_nuisance
 #' @export

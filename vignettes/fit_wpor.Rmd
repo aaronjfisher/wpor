@@ -1,8 +1,8 @@
 ---
-title: "Testing WPOR"
+title: "Fitting WPOR Models"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Testing WPOR}
+  %\VignetteIndexEntry{Fitting WPOR Models}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -37,6 +37,7 @@ test_data <- test_list$data
 
 
 ## Define workflows for each nuisance model
+
 ```{r define_workflows}
 cn <- colnames(train_data)
 x_terms <- cn[starts_with("x.", vars = cn)]
@@ -71,6 +72,18 @@ effect_wf
 ```
 
 ## Fit weighted pseudo-outcome regression
+
+To implement different variations of POR, users can specify different pseudo-outcome functions and weighting functions.
+For example, 
+
+* `pseudo_fun = pseudo_U` and `weight_fun = weight_1`
+produces U-Learning. 
+* `pseudo_fun = pseudo_U` and `weight_fun = weight_U_AX`
+produces R-Learning. 
+* `pseudo_fun = pseudo_DR` and `weight_fun = weight_1`
+produces standard DR-Learning. 
+* `pseudo_fun = pseudo_DR` and `weight_fun = weight_DR_X`
+produces inverse-variance weighted DR-Learning. 
 
 ```{r fit_wpor}
 fitted <- fit_wpor(
@@ -128,6 +141,8 @@ mean((
 ```
 
 # Two-Learner (T-Learner) approach
+
+`wpor` also contains functions for fitting a "T-Learner" approach.
 
 ```{r workspace, include=FALSE, eval=FALSE}
 t_learner_fitted <- t_learner(train_data, outcome_marginal_wf)
