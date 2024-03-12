@@ -13,7 +13,7 @@ devtools::install_github('aaronjfisher/wpor')
 
 Rather than hard-coding a handful of options for nuisance models, we aimed to make `wpor` integrate easily with existing collections of R training algorithms that share a common syntax. One of the most popular collections is the `tidymodels` set of packages, namely `parsnip` and `workflows`, which we use here. The simplest way to specify a training algorithm in `wpor` is to define a  "workflow" object (see examples in the "Fitting WPOR Models" vignette)
 
-For instructions on how to use nuisance models not included in `parsnip`, see the section "Extentions for algorithms not available in `parsnip`", below.
+For instructions on how to use nuisance models not included in `parsnip`, see the section "Extentions for algorithms not available in `parsnip`," below.
 
 ## Convenience functions for parameter tuning
 
