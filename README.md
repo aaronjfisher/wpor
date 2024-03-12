@@ -9,11 +9,11 @@ This package implements the meta-learner methods discussed in [Fisher (2023)](ht
 devtools::install_github('aaronjfisher/wpor')
 ```
 
-## Specifying workflows for the nuisance models and the conditional effect model
+## Specifying the nuisance models and the conditional effect model
 
-Rather than hard-coding a handful of options for nuisance models, we aimed to make `wpor` integrate easily with existing collections of R training algorithms that share a common syntax. One of the most popular collections is the `tidymodels` set of packages, namely `parsnip` and `workflows`, which we use here. The simplest way to specify a training algorithm in `wpor` is to define a  "workflow" object (see examples in the "Fitting WPOR Models" vignette)
+As WPOR is a meta algorithm that is agnostic to the models used, we aimed to make `wpor` compatible with a wide variety of chocies. Rather than hard-coding a handful of options for nuisance models, `wpor` integrates with the collection of training algorithms in the `tidymodels` set of packages, namely `parsnip` and `workflows`. These packages provide a standardized syntax for many popular training algorithms. The simplest way to specify a training algorithm in `wpor` is to define a  "workflow" object (see examples in the "Fitting WPOR Models" vignette).
 
-For instructions on how to use nuisance models not included in `parsnip`, see the section "Extentions for algorithms not available in `parsnip`," below.
+For models not included in `parsnip`, see the section "Extentions for algorithms not available in `parsnip`," below.
 
 ## Convenience functions for parameter tuning
 
