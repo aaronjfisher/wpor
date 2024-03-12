@@ -118,7 +118,7 @@ crossfit_nuisance <- function(
     min_prob = 0.01,
     v = 10,
     cf_order = 2,
-    verbose = TRUE) {
+    verbose = getOption("verbose")) {
   stopifnot(is.factor(data$treatment))
   stopifnot(all(data$treatment %in% 0:1))
 

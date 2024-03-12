@@ -23,7 +23,7 @@ tune_params <- function(
     resamples = rsample::vfold_cv(data, v),
     alpha = 0.05,
     burnin = length(resamples$splits),
-    verbose = FALSE,
+    verbose = getOption("verbose"),
     save_performance = FALSE,
     size = 10 # will be overwritten by grid
     ) {

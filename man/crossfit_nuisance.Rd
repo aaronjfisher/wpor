@@ -15,7 +15,7 @@ crossfit_nuisance(
   min_prob = 0.01,
   v = 10,
   cf_order = 2,
-  verbose = TRUE
+  verbose = getOption("verbose")
 )
 
 fit_wpor(
