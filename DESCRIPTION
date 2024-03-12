@@ -2,12 +2,12 @@ Package: wpor
 Title: Weighted pseudo-outcome regression
 Version: 0.0.3
 Authors: Aaron Fisher
-Description: What the package does (one paragraph).
+Description: This package implements the weighted pseudo-outcome regression methods discussed in https://arxiv.org/abs/2307.09700. For nuisance training methods, users can either input workflows from the tidymodels set of packages or define their own training algorithms. 
 License: Apache
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Imports:
   dplyr,
   finetune,

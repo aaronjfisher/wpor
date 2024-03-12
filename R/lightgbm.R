@@ -12,11 +12,11 @@
 #' fit_trt <- fit(trt_mod, training$data)
 #'
 #' pred_trt_train <- predict(fit_trt, training$data)
-#' boxplot(pred_trt_train ~ training$data$treatment)
+#' # boxplot(pred_trt_train ~ training$data$treatment)
 #'
 #' test <- sim_data(setup = "A", n = 2000, p = 6, sigma = 1)
 #' pred_trt_test <- predict(fit_trt, test$data)
-#' boxplot(pred_trt_test ~ test$data$treatment)
+#' # boxplot(pred_trt_test ~ test$data$treatment)
 #'
 #'
 #' out_mod <- lightgbm_spec(
@@ -27,8 +27,8 @@
 #'
 #' pred_out_train <- predict(fit_out, training$data)
 #' pred_out_test <- predict(fit_out, test$data)
-#' plot(pred_out_train, training$data$outcome)
-#' plot(pred_out_test, test$data$outcome)
+#' # plot(pred_out_train, training$data$outcome)
+#' # plot(pred_out_test, test$data$outcome)
 lightgbm_spec <- function(
     formula,
     mode,

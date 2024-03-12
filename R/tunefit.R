@@ -23,7 +23,7 @@ tune_params <- function(
     resamples = rsample::vfold_cv(data, v),
     alpha = 0.05,
     burnin = length(resamples$splits),
-    verbose = FALSE,
+    verbose = getOption("verbose"),
     save_performance = FALSE,
     size = 10 # will be overwritten by grid
     ) {
@@ -141,7 +141,7 @@ metric_neg_log_lik <- function(
   mean(weights * pmin(upper_lim, losses))
 }
 
-#' Create a tunefit: a workflow with instructions for tuning.
+#' Create a tunefit: a workflow or training algorithm with instructions for tuning.
 #'
 #' `tune_params`, `as.tunefit` and `fit.tunefit` are convenience functions
 #' for tuning a workflow.
@@ -157,6 +157,8 @@ metric_neg_log_lik <- function(
 #' At the time of fitting, `fit.tunefit` first applies tune_params
 #' to finalize the workflow, using the stored arguments from `as.tunefit`,
 #' and then applies `fit.workflow` to fit the finalized workflow.
+#' The as.tunefit class can also be used with custom training algorithms
+#' that are not workflows (see the "Fitting WPOR Models" vignette for an example).
 #'
 #' @param ... args to be passed to tune_params (e.g., v, grid) before fitting the workflow.
 #' @export

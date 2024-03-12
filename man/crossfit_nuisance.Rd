@@ -15,7 +15,7 @@ crossfit_nuisance(
   min_prob = 0.01,
   v = 10,
   cf_order = 2,
-  verbose = TRUE
+  verbose = getOption("verbose")
 )
 
 fit_wpor(
@@ -56,7 +56,9 @@ supplied.}
 
 \item{weight_fun}{the weighting function. See weight_fun.R#'}
 
-\item{effect_wf}{A workflow for fitting the final effect (pseudo-outcome) model.}
+\item{effect_wf}{A workflow for fitting the final effect (pseudo-outcome) model.
+This workflow should expect the pseudo-outcome to be stored in
+a data column labeled "pseudo".}
 }
 \value{
 a tibble of nuisance predictions. If cf_order is >2, there will be more than 1 prediction per row of \code{data}. The tibble contains: \code{.row}, the row index of \code{data}; \code{.fold_id}, the fold used to train the predictions; \code{.pred_treatment}, the predicted probability of treatment; \code{.pred_control}, the predicted probability of control (equal to 1-.pred_treatment if cf_order <= 3); \code{.pred_outcome_0_separate} the predicted outcome under treatment == 0, \code{.pred_outcome_1_separate} the predicted outcome under treatment == 1; \code{.pred_outcome_marginal} the predicted outcome under the observed treatment, i.e., marginalizing over treatment.

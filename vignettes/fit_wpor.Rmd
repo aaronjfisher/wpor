@@ -1,0 +1,237 @@
+---
+title: "Fitting WPOR Models"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Fitting WPOR Models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This vignette illustrates how to fit weighted pseudo-outcomes, using several different options for training nuisance models. These include using algoriths from the  `parnsip` and `workflows` packages, using custom training algorithms, and using convenience functions for hyperparameter tuning.
+
+Methods such as DR-Learning, Inverse Variance Weighted DR-Learning, and R-Learning can be implemented by choosing different options for the weighting and pseudo-outcome functions.
+
+## Simulate data
+
+```{r simulate_data}
+library("wpor")
+library("dplyr")
+library("tidymodels")
+
+options("verbose" = TRUE)
+
+set.seed(0)
+p <- 6
+n_train <- 500
+n_test <- 20000
+sigma <- 1
+setup <- "C"
+train_data <- sim_data(
+  setup = setup, n = n_train, p = p, sigma = sigma
+)$data
+test_list <- sim_data(
+  setup = setup, n = n_test, p = p, sigma = sigma
+)
+test_data <- test_list$data
+```
+
+
+## Defining nuisance models with parsnip & workflows
+
+The simplest way to define a nuisance model is to use the `tidymodels` set of packages, namely `parnsip` and `workflows`, which provide a standardized interface for many training algorithms.
+
+```{r define_workflows}
+cn <- colnames(train_data)
+x_terms <- cn[starts_with("x.", vars = cn)]
+rhs <- paste(x_terms, collapse = " + ")
+
+treatment_formula <- formula(paste("treatment ~", rhs))
+outcome_marginal_formula <- formula(paste("outcome ~", rhs))
+outcome_single_formula <- formula(paste("outcome ~ treatment + ", rhs))
+effect_formula <- formula(paste("pseudo ~", rhs))
+
+rf_mod <-
+  rand_forest(trees = 100) %>%
+  set_engine("ranger")
+
+treatment_wf <- workflow() %>%
+  add_model(set_mode(rf_mod, "classification")) %>%
+  add_formula(treatment_formula)
+outcome_marginal_wf <- workflow() %>%
+  add_model(set_mode(rf_mod, "regression")) %>%
+  add_formula(outcome_marginal_formula)
+outcome_single_wf <- workflow() %>%
+  add_model(set_mode(rf_mod, "regression")) %>%
+  add_formula(outcome_single_formula)
+effect_wf <- workflow() %>%
+  add_model(set_mode(rf_mod, "regression")) %>%
+  add_formula(effect_formula)
+
+treatment_wf
+outcome_marginal_wf
+outcome_single_wf
+effect_wf
+```
+
+## Fit weighted pseudo-outcome regression
+
+To implement different variations of POR, users can specify different pseudo-outcome functions and weighting functions.
+For example, 
+
+* `pseudo_fun = pseudo_U` and `weight_fun = weight_1`
+produces U-Learning. 
+* `pseudo_fun = pseudo_U` and `weight_fun = weight_U_AX`
+produces R-Learning. 
+* `pseudo_fun = pseudo_DR` and `weight_fun = weight_1`
+produces standard DR-Learning. 
+* `pseudo_fun = pseudo_DR` and `weight_fun = weight_DR_X`
+produces inverse-variance weighted DR-Learning. 
+
+```{r fit_wpor}
+fitted <- fit_wpor(
+  data = train_data,
+  outcome_marginal_wf = outcome_marginal_wf,
+  outcome_single_wf = outcome_single_wf,
+  treatment_wf = treatment_wf,
+  effect_wf = effect_wf,
+  pseudo_fun = pseudo_DR_single,
+  weight_fun = weight_DR_X,
+  min_prob = 0.01,
+  v = 5,
+  cf_order = 2
+)
+
+## MSE
+mean((
+  predict(fitted, test_data)$.pred
+    - test_list$params$tau
+)^2)
+```
+
+Alternatively, the nuisance predictions can be pre-computed. This is helpful when comparing options for `pseudo_fun` and/or `weight_fun`.
+
+```{r}
+nuisance_tbl <- crossfit_nuisance(
+  data = train_data,
+  outcome_marginal_wf = outcome_marginal_wf,
+  outcome_single_wf = outcome_single_wf,
+  treatment_wf = treatment_wf,
+  min_prob = 0.01,
+  v = 5,
+  cf_order = 2
+)
+
+fitted2 <- fit_wpor(
+  data = train_data,
+  nuisance_tbl = nuisance_tbl,
+  effect_wf = effect_wf,
+  pseudo_fun = pseudo_DR_single,
+  weight_fun = weight_DR_X
+)
+
+mean((
+  predict_expected_value(fitted2, test_data)
+  - test_list$params$tau
+)^2)
+```
+
+## Tuning tidymodels workflows
+
+wpor also includes convenience functions for tuning hyperparameters. Parameters for nuisance models can either be pretuned, or specified be tuned at the time of fitting.
+
+For more details on tuning parameters, see ?tune_params and ?as.tunefit.
+
+```{r}
+### Pre-tuning workflows
+mod_to_tune <- rand_forest(trees = tune(), min_n = tune())
+
+treatment_tuned_wf <- workflow() %>%
+  add_model(set_mode(mod_to_tune, "classification")) %>%
+  add_formula(treatment_formula) %>%
+  tune_params(data = train_data, size = 5, v = 5)
+treatment_tuned_wf
+treatment_wf
+
+### Give instructions for tuning at the time of fitting.
+effect_tunefit <- workflow() %>%
+  add_model(set_mode(mod_to_tune, "regression")) %>%
+  add_formula(effect_formula) %>%
+  as.tunefit(size = 5, v = 5)
+effect_tunefit$tune_args # will be passed to tune_params at time of fitting.
+```
+
+## Defining custom nuisance models
+
+In some situations, analysts may wish to use algorithms not included in the tidymodels ecosystem. For example, at the time of this writing, the tidymodels options for boosted trees all have limitations. Namely, the implementation of lightgbm doesn't allow weights, and, informally, we have found the implementation of xgboost to lead to node crashes. 
+
+To address this, the `wpor` package includes a custom implementation of the `lightgbm` packages. Users interested in creating their own training algorithms can refer the source code for 
+
+* lightgbm_spec
+* fit.lightgbm_spec
+* predict.lightgbm_fit
+
+and, optionally, 
+
+* add_weights_column.lightgbm_spec
+* get_weights_column.lightgbm_spec
+* get_y.lightgbm_spec
+* update_params.lightgbm_spec
+
+Below, we also include minimal tuning the parameters of lightgbm. 
+
+
+```{r lightgbm}
+# For nuisance models that are not specified as workflows,
+# we require a pre-defined grid of tuning parameters to search over
+(lgbm_grid <- lightgbm_grid(size = 10, num_threads = 1))
+
+## Pretuned algorithms
+treatment_lgbm <- lightgbm_spec(formula = treatment_formula, mode = "classification") %>%
+  tune_params(data = train_data, grid = lgbm_grid, v = 5)
+
+outcome_marginal_lgbm <- lightgbm_spec(formula = outcome_marginal_formula, mode = "regression") %>%
+  tune_params(data = train_data, grid = lgbm_grid, v = 5)
+outcome_single_lgbm <- lightgbm_spec(formula = outcome_single_formula, mode = "regression") %>%
+  tune_params(data = train_data, grid = lgbm_grid, v = 5)
+
+## Algorithms to be tuned at the time of fitting
+effect_lgbm <- lightgbm_spec(formula = effect_formula, mode = "regression") %>%
+  as.tunefit(grid = lgbm_grid, v = 5)
+
+fitted_lgbm <- fit_wpor(
+  data = train_data,
+  outcome_marginal_wf = outcome_marginal_lgbm,
+  outcome_single_wf = outcome_single_lgbm,
+  treatment_wf = treatment_lgbm,
+  effect_wf = effect_lgbm,
+  pseudo_fun = pseudo_DR_single,
+  weight_fun = weight_DR_X,
+  min_prob = 0.01,
+  v = 5,
+  cf_order = 2
+)
+mean((
+  predict_expected_value(fitted_lgbm, test_data)
+  - test_list$params$tau
+)^2)
+```
+
+## Two-Learner (T-Learner) approach
+
+`wpor` also contains functions for fitting a "T-Learner" approach.
+
+```{r workspace, include=FALSE, eval=FALSE}
+t_learner_fitted <- t_learner(train_data, outcome_marginal_wf)
+mean((
+  predict_expected_value(t_learner_fitted, test_data)
+  - test_list$params$tau
+)^2)
+```
+

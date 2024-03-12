@@ -30,7 +30,13 @@ pseudo_plugin(.pred_outcome_1_single, .pred_outcome_0_single)
 
 pseudo_U(outcome, treatment, .pred_outcome_marginal, .pred_treatment)
 
-pseudo_cov(outcome, treatment, .pred_outcome_marginal, .pred_treatment)
+pseudo_cov(
+  outcome,
+  treatment,
+  .pred_outcome_marginal,
+  .pred_treatment,
+  .pred_control
+)
 }
 \description{
 Pseudo outcome functions
