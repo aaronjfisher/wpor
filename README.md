@@ -20,7 +20,7 @@ For instructions on how to use nuisance models not included in `parsnip`, see th
 In general when implementing cross-fitting with hyper-parameter tuning, there are two common approaches:
 
 * Strict cross-fitting with nested tuning: within each iteration of cross-fitting, run cross-validation to select tuning parameters.
-* Approximate cross-fitting: pre-tune parameters via cross-validation before running running cross-fitting. Then use the same tuning parameters over all iterations of cross-fitting. At the time of this writing, this approach is what is used in the `rlearner` [package](https://github.com/xnie/rlearner/blob/6806396960e672214e2ef36e16c76bbb58ef9114/R/rboost.R#L56-L68).
+* Approximate cross-fitting with pre-tuned parameters: Before running cross-fitting, pre-tune the parameters with cross-validation. Next, use the same tuning parameters over all iterations of cross-fitting. This technically breaks the independencies that cross-fitting aims to ensure, as all data folds are used in selecting tuning parameters. At the time of this writing, this approximate approach is what is used in the `rlearner` [package](https://github.com/xnie/rlearner/blob/6806396960e672214e2ef36e16c76bbb58ef9114/R/rboost.R#L56-L68).
 
 `wpor` includes convenience functions for either approach. For the approximate method, see `?tune_params`. 
 
