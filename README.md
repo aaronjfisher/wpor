@@ -15,18 +15,16 @@ Rather than hard-coding a handful of options for nuisance models, we aimed to ma
 
 For instructions on how to use nuisance models not included in `parsnip`, see the section "Extentions for algorithms not available in `parsnip`", below.
 
-## Convenience functions for tuning workflows and training algorithms
+## Convenience functions for parameter tuning
 
 In general when implementing cross-fitting with hyper-parameter tuning, there are two common approaches:
 
-* Strict, nested tuning: within each iteration of cross-fitting, run cross-validation to select tuning parameters.
-* Approximate cross-fitting: tune parameters via cross-validation before running running cross-fitting, using the same tuning parameters over all iterations of cross-fitting. At the time of this writing, this approach is what is used in the `rlearner` [package](https://github.com/xnie/rlearner/blob/6806396960e672214e2ef36e16c76bbb58ef9114/R/rboost.R#L56-L68).
+* Strict cross-fitting with nested tuning: within each iteration of cross-fitting, run cross-validation to select tuning parameters.
+* Approximate cross-fitting: pre-tune parameters via cross-validation before running running cross-fitting. Then use the same tuning parameters over all iterations of cross-fitting. At the time of this writing, this approach is what is used in the `rlearner` [package](https://github.com/xnie/rlearner/blob/6806396960e672214e2ef36e16c76bbb58ef9114/R/rboost.R#L56-L68).
 
 `wpor` includes convenience functions for either approach. For the approximate method, see `?tune_params`. 
 
-For the strict method, we suggest using the object class `tunefit`, which packages a workflow or training algorithm together with arguments for how that algorithm should be tuned in each iteration of cross-fitting. These objects can be created, for example, with `as.tunefit(workflow, ...)` (see `?as.tunefit` for more details). Whenever a `tunefit` model is fit, the `fit.tunefit` method first applies `tune_params` using the arguments passed via `...`, and then applies `fit` to the updated workflow or training algorithm. The name `tunefit` refers to the fact that tuning is done just before fitting. 
-
-By passing an object of class `tunefit` to the `crossfit_nuisance` function, nested parameter tuning within iterations of cross-fitting will be done automatically, as the `crossfit_nuisance` will use the `fit` method within iterations of cross-fitting.
+For the strict method, we suggest using the object class `tunefit`, which packages a workflow or training algorithm together with arguments for how that algorithm it should be tuned (see `?as.tunefit`). These instructions are then applied within in each iteration of cross-fitting.
 
 
 
