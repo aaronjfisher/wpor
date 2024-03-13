@@ -33,20 +33,20 @@ While it is possible to integrate new training algorithms in `parsnip` syntax, t
 With this in mind, the `wpor` package internally uses only a handful of methods for `workflow` objects. Users who wish to use custom model fitting algorithms need only define these methods for their algorithm's object class. The methods are as follows.
 
 
-* Methods required for any algorithm (referred to below as `trainer`)
-	* `fit(trainer, data, ...)`: returns a trained model object with a `predict` method. The `predict` method should return a vector of expected values for the predicted outcome. For example, given a training data frame `data1`, a test data frame `data2`, and a training algorithm object `trainer`, running `fitted <- fit(object, data1)` should produce a fitted model, and running `predict(fitted, data2)` should produce a vector of predictions for the expected value of the outcome. 
+* Methods required for any algorithm
+	* `fit(algorithm, data, ...)`: returns a trained model object with a `predict` method. The `predict` method should return a vector of expected values for the predicted outcome. For example, given a training data frame `data1`, a test data frame `data2`, and a training algorithm object `algorithm`, running `fitted <- fit(algorithm, data1)` should produce a fitted model, and running `predict(fitted, data2)` should produce a vector of predictions for the expected value of the outcome. 
 		* Examples: `fit.lightgbm_spec`, `predict.lightgbm_fit`
 	* Alternatively, if a `predict` method already exists that produces output in a different format and users do not wish to overwrite this method, they can instead define a method `predict_expected_value(fitted, data2)` that produces a vector of predictions for the expected value.
 		* Example: `predict_expected_value.workflow`
 * Methods for algorithms used in the pseudo-outcome regression (POR) step
-	* `add_weights_column(trainer, column)`: specifies a column name of the training data that will be treated as a weight column.
+	* `add_weights_column(algorithm, column)`: specifies a column name of the training data that will be treated as a weight column.
 		* Example: `add_weights_column.workflow`
-	* `get_weights_column(trainer, column)`: extract the column of weights.
+	* `get_weights_column(algorithm, column)`: extract the column of weights.
 		* Example: `get_weights_column.workflow`
 * Methods for algorithms that wish to use the `wpor::tune_params` or `wpor::as.tunefit` functions
-	* `get_y(trainer, data)`: extract the column of outcomes to be predicted.
+	* `get_y(algorithm, data)`: extract the column of outcomes to be predicted.
 		* Example: `get_y.workflow`
-	* `update_params(trainer, new_params)`: replace the tuning parameters of the trainer with the list `new_params`. 
+	* `update_params(algorithm, new_params)`: replace the tuning parameters of the algorithm with the list `new_params`. 
 		* Example: `update_params.workflow`
 
 
