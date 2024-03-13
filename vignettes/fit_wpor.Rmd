@@ -167,24 +167,11 @@ effect_tunefit <- workflow() %>%
 effect_tunefit$tune_args # will be passed to tune_params at time of fitting.
 ```
 
-## Defining custom nuisance models
+## Using custom nuisance models
 
 In some situations, analysts may wish to use algorithms not included in the tidymodels ecosystem. For example, at the time of this writing, the tidymodels options for boosted trees all have limitations. Namely, the implementation of lightgbm doesn't allow weights, and, informally, we have found the implementation of xgboost to lead to node crashes. 
 
-To address this, the `wpor` package includes a custom implementation of the `lightgbm` packages. Users interested in creating their own training algorithms can refer the source code for 
-
-* lightgbm_spec
-* fit.lightgbm_spec
-* predict.lightgbm_fit
-
-and, optionally, 
-
-* add_weights_column.lightgbm_spec
-* get_weights_column.lightgbm_spec
-* get_y.lightgbm_spec
-* update_params.lightgbm_spec
-
-Below, we also include minimal tuning the parameters of lightgbm. 
+To address this, the `wpor` package includes a custom implementation of the `lightgbm` packages (see the Custom models vignette). Below, we illustrate how this custom model can be used in place of a `workflow` object. We also include a minimal example of parameter tuning. 
 
 
 ```{r lightgbm}

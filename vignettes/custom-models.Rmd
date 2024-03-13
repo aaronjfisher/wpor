@@ -1,0 +1,129 @@
+---
+title: "Custom models"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Custom models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This vignette discusses how to extend `wpor` to use algorithms not available in `parsnip`.
+
+While it is possible to integrate new training algorithms in `parsnip` syntax, the process is [somewhat complex](https://www.tidymodels.org/learn/develop/models/), as `parsnip` manages many aspects of the modeling process. In `wpor`, our goal was the mix the convenience of the pre-existing `parsnip` library with the flexibility of lightweight extensions. 
+
+With this in mind, the `wpor` package internally uses only a handful of methods for `workflow` objects. Users who wish to use custom model fitting algorithms need only define these methods for their algorithm's object class. Depending on how users wish to use the model, different sets of methods should be coded.
+
+
+## Unifying example: wpor implementation of Lightgbm
+
+At the time of this writing, the tidymodels options for boosted trees all have limitations. Namely, the implementation of lightgbm doesn't allow weights, and, informally, we have found the implementation of xgboost to lead to node crashes. 
+
+To address this, the `wpor` package includes a custom implementation of the `lightgbm` packages. Below, we illustrate the methods defined internally for this algorithm. Users interested in creating their own training algorithms can refer the source code.
+
+
+## Methods required for any algorithm
+
+Any training algorithm requires a `fit(algorithm, data, ...)` method that returns a trained model object with a `predict_expected_value` method. The `predict_expected_value` method should return a vector of expected values for the predicted outcome. If no `predict_expected_value` method is defined for the fitted model class, wpor will default to the `predict` method for that class.
+
+For examples, see the source code for `fit.lightgbm_spec`, `predict.lightgbm_fit`, `predict_expected_value.default`, and `predict_expected_value.workflow`. We illustrate the `lightgbm` example in more detail below.
+
+Consider the following simulation setting
+
+```{r sim} 
+library("wpor")
+library("dplyr")
+library("tidymodels")
+
+set.seed(0)
+p <- 6
+n_train <- 100
+n_test <- 20
+sigma <- 1
+setup <- "C"
+train_data <- sim_data(
+  setup = setup, n = n_train, p = p, sigma = sigma
+)$data
+test_list <- sim_data(
+  setup = setup, n = n_test, p = p, sigma = sigma
+)
+test_data <- test_list$data
+
+cn <- colnames(train_data)
+x_terms <- cn[starts_with("x.", vars = cn)]
+rhs <- paste(x_terms, collapse = " + ")
+treatment_formula <- formula(paste("treatment ~", rhs))
+```
+
+Examples of the above methods are as follows.
+
+```{r}
+treatment_lgbm <- lightgbm_spec(formula = treatment_formula, mode = "classification")
+class(treatment_lgbm)
+fitted <- fit(treatment_lgbm, train_data)
+predict(fitted, test_data)
+
+stopifnot(all(
+  predict(fitted, test_data) 
+  ==
+  predict_expected_value(fitted, test_data)
+))
+```
+
+## Methods for algorithms used in the pseudo-outcome regression (POR) step
+
+For models used in the pseudo-outcome regressions step, we require:
+
+* `add_weights_column(algorithm, column)`: specifies a column name of the training data that will be treated as a weight column.
+	* Example: `add_weights_column.workflow`
+* `get_weights_column(algorithm, column)`: extract the column of weights.
+	* Example: `get_weights_column.workflow`
+
+```{r}
+train_data$weights <- runif(n_train, 1 / 2, 1.5)
+train_data$weights <- train_data$weights / mean(train_data$weights)
+treatment_lgbm <- add_weights_column(treatment_lgbm, "weights")
+get_weights_column(treatment_lgbm)
+```
+
+
+### Methods required to use parameter tuning functions
+
+To using parameter tuning functions, we require
+
+* `get_y(algorithm, data)`: extract the column of outcomes to be predicted.
+	* Example: `get_y.workflow`
+* `update_params(algorithm, new_params)`: replace the tuning parameters of the algorithm with the list `new_params`. 
+	* Example: `update_params.workflow`
+
+
+```{r}
+# When tuning workflows, wpor generates 
+# grids of parameter values automatically.
+# When using a custom algorithm, users will 
+# need to supply their own parameter grid.
+(lgbm_grid <- lightgbm_grid(size = 10, num_threads = 1))
+
+get_y(treatment_lgbm, train_data)
+
+updated_lgbm <- update_params(treatment_lgbm, as.list(lgbm_grid[1, ]))
+str(treatment_lgbm)
+str(updated_lgbm)
+
+tuned_lgbm <- tune_params(
+  treatment_lgbm,
+  data = train_data,
+  grid = lgbm_grid, v = 5, verbose = TRUE
+)
+str(tuned_lgbm)
+
+tunefit_lgbm <- as.tunefit(
+  treatment_lgbm,
+  grid = lgbm_grid, v = 5, verbose = TRUE
+)
+tuned_fitted <- fit(tunefit_lgbm, train_data)
+predict(tuned_fitted, test_data)
+```
+
+
+
+

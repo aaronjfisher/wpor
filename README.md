@@ -1,6 +1,14 @@
 # wpor: a package for weighted pseudo-outcome regression
 
-This package implements the meta-learner methods discussed in [Fisher (2023)](https://arxiv.org/abs/2307.09700). 
+This package implements the meta-learner methods discussed in [Fisher (2023)](https://arxiv.org/abs/2307.09700), including 
+
+* Inverse Variance Weighted Doubly Robust Learning,
+* Standard Doubly Robust (DR) Learning,
+* Robinson (R) Learning,
+* U Learning, 
+* Covariance-based Learning,
+* Inverse Variance Weighted, Covariance-based Learning, and
+* Two-Model (T) Learning. 
 
 
 ## Installation
@@ -13,7 +21,7 @@ devtools::install_github('aaronjfisher/wpor')
 
 As WPOR is a meta algorithm that is agnostic to the models used, we aimed to make `wpor` compatible with a wide variety of chocies. Rather than hard-coding a handful of options for nuisance models, `wpor` integrates with the collection of training algorithms in the `tidymodels` set of packages, namely `parsnip` and `workflows`. These packages provide a standardized syntax for many popular training algorithms. The simplest way to specify a training algorithm in `wpor` is to define a  "workflow" object (see examples in the "Fitting WPOR Models" vignette).
 
-For models not included in `parsnip`, see the section "Extentions for algorithms not available in `parsnip`," below.
+For examples of how to extend `wpor` to use custom algorithms not available in `parsnip`, see the "Custom models" vignette.
 
 ## Parameter tuning
 
@@ -23,37 +31,5 @@ In general when implementing cross-fitting with hyper-parameter tuning, there ar
 * Approximate cross-fitting with pre-tuned parameters: Before running cross-fitting, pre-tune the parameters with cross-validation. Next, use the same tuning parameters over all iterations of cross-fitting. This technically breaks the independencies that cross-fitting aims to ensure, as all data folds are used in selecting tuning parameters. At the time of this writing, this approximate approach is what is used in the `rlearner` [package](https://github.com/xnie/rlearner/blob/6806396960e672214e2ef36e16c76bbb58ef9114/R/rboost.R#L56-L68).
 
 `wpor` includes convenience functions for either approach. For the approximate method, see `?tune_params`. For the strict method, we suggest using the object class `tunefit`, which packages a workflow or training algorithm together with arguments for how that algorithm should be tuned (see `?as.tunefit`). These instructions are then applied within in each iteration of cross-fitting.
-
-
-
-## Extentions for algorithms not available in `parsnip`
-
-While it is possible to integrate new training algorithms in `parsnip` syntax, the process is [somewhat complex](https://www.tidymodels.org/learn/develop/models/), as `parsnip` manages many aspects of the modeling process. In `wpor`, our goal was the mix the convenience of the pre-existing `parsnip` library with the flexibility of lightweight extensions. 
-
-With this in mind, the `wpor` package internally uses only a handful of methods for `workflow` objects. Users who wish to use custom model fitting algorithms need only define these methods for their algorithm's object class. The methods are as follows.
-
-
-* Methods required for any algorithm
-	* `fit(algorithm, data, ...)`: returns a trained model object with a `predict` method. The `predict` method should return a vector of expected values for the predicted outcome. For example, given a training data frame `data1`, a test data frame `data2`, and a training algorithm object `algorithm`, running `fitted <- fit(algorithm, data1)` should produce a fitted model, and running `predict(fitted, data2)` should produce a vector of predictions for the expected value of the outcome. 
-		* Examples: `fit.lightgbm_spec`, `predict.lightgbm_fit`
-	* Alternatively, if a `predict` method already exists that produces output in a different format and users do not wish to overwrite this method, they can instead define a method `predict_expected_value(fitted, data2)` that produces a vector of predictions for the expected value.
-		* Example: `predict_expected_value.workflow`
-* Methods for algorithms used in the pseudo-outcome regression (POR) step
-	* `add_weights_column(algorithm, column)`: specifies a column name of the training data that will be treated as a weight column.
-		* Example: `add_weights_column.workflow`
-	* `get_weights_column(algorithm, column)`: extract the column of weights.
-		* Example: `get_weights_column.workflow`
-* Methods for algorithms that wish to use the `wpor::tune_params` or `wpor::as.tunefit` functions
-	* `get_y(algorithm, data)`: extract the column of outcomes to be predicted.
-		* Example: `get_y.workflow`
-	* `update_params(algorithm, new_params)`: replace the tuning parameters of the algorithm with the list `new_params`. 
-		* Example: `update_params.workflow`
-
-
-
-
-
-
-
 
 
