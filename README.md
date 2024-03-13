@@ -22,7 +22,7 @@ In general when implementing cross-fitting with hyper-parameter tuning, there ar
 * Strict cross-fitting with nested tuning: within each iteration of cross-fitting, run cross-validation to select tuning parameters.
 * Approximate cross-fitting with pre-tuned parameters: Before running cross-fitting, pre-tune the parameters with cross-validation. Next, use the same tuning parameters over all iterations of cross-fitting. This technically breaks the independencies that cross-fitting aims to ensure, as all data folds are used in selecting tuning parameters. At the time of this writing, this approximate approach is what is used in the `rlearner` [package](https://github.com/xnie/rlearner/blob/6806396960e672214e2ef36e16c76bbb58ef9114/R/rboost.R#L56-L68).
 
-`wpor` includes convenience functions for either approach. For the approximate method, see `?tune_params`. For the strict method, we suggest using the object class `tunefit`, which packages a workflow or training algorithm together with arguments for how that algorithm it should be tuned (see `?as.tunefit`). These instructions are then applied within in each iteration of cross-fitting.
+`wpor` includes convenience functions for either approach. For the approximate method, see `?tune_params`. For the strict method, we suggest using the object class `tunefit`, which packages a workflow or training algorithm together with arguments for how that algorithm should be tuned (see `?as.tunefit`). These instructions are then applied within in each iteration of cross-fitting.
 
 
 
