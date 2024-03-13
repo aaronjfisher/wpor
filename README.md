@@ -28,7 +28,7 @@ In general when implementing cross-fitting with hyper-parameter tuning, there ar
 
 ## Extentions for algorithms not available in `parsnip`
 
-While it is possible to integrate new training algorithms in `parsnip` syntax, the process is somewhat complex, as `parsnip` manages many aspects of the modeling process. In `wpor`, our goal was the mix the convenience of the pre-existing `parsnip` library with the flexibility of lightweight extensions. 
+While it is possible to integrate new training algorithms in `parsnip` syntax, the process is [somewhat complex](https://www.tidymodels.org/learn/develop/models/), as `parsnip` manages many aspects of the modeling process. In `wpor`, our goal was the mix the convenience of the pre-existing `parsnip` library with the flexibility of lightweight extensions. 
 
 With this in mind, the `wpor` package internally uses only a handful of methods for `workflow` objects. Users who wish to use custom model fitting algorithms need only define these methods for their algorithm's object class. The methods are as follows.
 
