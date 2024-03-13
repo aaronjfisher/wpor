@@ -26,7 +26,7 @@ In general when implementing cross-fitting with hyper-parameter tuning, there ar
 
 
 
-## Extentions for algorithms not available in `tidymodels`
+## Extentions for algorithms not available in `parsnip`
 
 While it is possible to integrate new training algorithms in `parsnip` syntax, the process is somewhat complex, as `parsnip` manages many aspects of the modeling process. In `wpor`, our goal was the mix the convenience of the pre-existing `parsnip` library with the flexibility of lightweight extensions. 
 
