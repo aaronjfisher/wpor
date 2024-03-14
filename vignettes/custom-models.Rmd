@@ -63,9 +63,9 @@ fitted <- fit(treatment_lgbm, train_data)
 predict(fitted, test_data)
 
 stopifnot(all(
-  predict(fitted, test_data) 
+  predict(fitted, test_data)
   ==
-  predict_expected_value(fitted, test_data)
+    predict_expected_value(fitted, test_data)
 ))
 ```
 
@@ -97,9 +97,9 @@ To using parameter tuning functions, we require
 
 
 ```{r}
-# When tuning workflows, wpor generates 
+# When tuning workflows, wpor generates
 # grids of parameter values automatically.
-# When using a custom algorithm, users will 
+# When using a custom algorithm, users will
 # need to supply their own parameter grid.
 (lgbm_grid <- lightgbm_grid(size = 10, num_threads = 1))
 
