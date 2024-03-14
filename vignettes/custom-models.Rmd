@@ -23,7 +23,7 @@ To address this, the `wpor` package includes a custom implementation of the `lig
 
 ## Methods required for any algorithm
 
-Any training algorithm requires a `fit(algorithm, data, ...)` method that returns a trained model object with a `predict_expected_value` method. The `predict_expected_value` method should return a vector of expected values for the predicted outcome. If no `predict_expected_value` method is defined for the fitted model class, wpor will default to the `predict` method for that class.
+Any training algorithm requires a `fit(algorithm, data, ...)` method that returns a trained model object with a `predict_expected_value` method. The `predict_expected_value` method should return a vector of expected values for the predicted outcome. If no `predict_expected_value` method is defined for the fitted model class, wpor will default to the `predict` method for that class. In other words, `predict_expected_value` should only be left undefined if there is an existing `predict` method that returns a vector of expected values.
 
 For examples, see the source code for `fit.lightgbm_spec`, `predict.lightgbm_fit`, `predict_expected_value.default`, and `predict_expected_value.workflow`. We illustrate the `lightgbm` example in more detail below.
 
