@@ -91,3 +91,75 @@ test_that("xgboost (parsnip) fit uses weights", {
 
   expect_true(error_right_weights * 20 < error_wrong_weights)
 })
+
+
+
+
+
+test_that("Test that tune_params works for lightgbm & workflows without errors", {
+  # This test used to be a vignette, but
+  # I removed this vignette in favor of
+  # ?tune_params and ?as.tunefit examples.
+
+  # Simulate data
+  library("dplyr")
+
+
+  set.seed(0)
+  training <- sim_data(setup = "A", n = 700, p = 6, sigma = 1)
+  tdata <- training$data
+  tdata$w <- 1
+
+  gbm <- lightgbm_spec(
+    formula = training$formulas$treatment,
+    mode = "classification",
+  )
+  gbm
+
+  # head(get_y(gbm, tdata))
+  # head(get_x(gbm, tdata))
+  update_params(gbm, list(learning_rate = .1))
+
+
+  gbm_grid <- lightgbm_grid(5)
+
+  expect_no_error({
+    tuned_gbm <- tune_params(
+      gbm,
+      grid = gbm_grid,
+      metric = NULL,
+      resamples = rsample::vfold_cv(tdata, 4),
+      alpha = 0.05,
+      burnin = 3,
+      verbose = TRUE,
+      save_performance = TRUE
+    )
+  })
+  # matplot(attributes(tuned_gbm)$tune_results$performance, type = "l")
+
+
+  library("tidymodels")
+  # Define a tidymodels workflow
+  mod_spec <- boost_tree(min_n = tune(), learn_rate = tune()) %>%
+    set_engine("xgboost")
+  #'
+  wf <- workflow() %>%
+    add_model(set_mode(mod_spec, "classification")) %>%
+    add_formula(training$formulas$treatment)
+
+
+  expect_no_error({
+    tuned_wf <- tune_params(
+      wf,
+      metric = NULL,
+      resamples = rsample::vfold_cv(tdata, 5),
+      alpha = 0.05,
+      burnin = 3,
+      verbose = TRUE,
+      save_performance = TRUE,
+      size = 5
+    )
+
+    fit_tuned_wf <- fit(tuned_wf, tdata)
+  })
+})

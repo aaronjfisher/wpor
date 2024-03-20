@@ -22,10 +22,10 @@ library("tidymodels")
 
 set.seed(456)
 p <- 6
-n_train <- 500
+n_train <- 100
 n_test <- 20000
 sigma <- 1
-setup <- "B"
+setup <- "C"
 train_data <- sim_data(
   setup = setup, n = n_train, p = p, sigma = sigma
 )$data

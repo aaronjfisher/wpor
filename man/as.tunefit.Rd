@@ -16,7 +16,7 @@ tune_params(
   alpha = 0.05,
   burnin = NULL,
   seed = NULL,
-  verbose = FALSE,
+  verbose = getOption("verbose"),
   save_performance = FALSE,
   size = 10
 )
@@ -71,6 +71,8 @@ passed to tune_params.
 At the time of fitting, \code{fit.tunefit} first applies tune_params
 to finalize the workflow, using the stored arguments from \code{as.tunefit},
 and then applies \code{fit.workflow} to fit the finalized workflow.
+The as.tunefit class can also be used with custom training algorithms
+that are not workflows (see the "Fitting WPOR Models" vignette for an example).
 }
 \examples{
 library(tidymodels)
