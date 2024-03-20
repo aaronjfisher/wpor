@@ -12,9 +12,10 @@ tune_params(
   grid = NULL,
   metric = NULL,
   v = 10,
-  resamples = rsample::vfold_cv(data, v),
+  resamples = NULL,
   alpha = 0.05,
-  burnin = length(resamples$splits),
+  burnin = NULL,
+  seed = NULL,
   verbose = FALSE,
   save_performance = FALSE,
   size = 10
@@ -31,10 +32,14 @@ as.tunefit(trainer, ...)
 
 \item{v}{number of cv folds to use in resamples; overwritten by resamples, if provided.}
 
-\item{resamples}{An ‘rset()’ object object used to evaluate wf}
+\item{resamples}{An ‘rset()’ object object used to evaluate wf. Defaults to rsample::vfold_cv(data, v).}
 
 \item{burnin}{how many folds to examine before discarding
-poorly performing parameter sets}
+poorly performing parameter sets. Defaults to length(resamples$splits).}
+
+\item{seed}{if specified, temporarily changes the seed to ensure
+reproducibility when computing resamples. The original seed of the calling
+environment is restored before the tune_params function completes.}
 
 \item{save_performance}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} save performance
 metrics as an attribute. If using as.tunefit, this attribute
@@ -91,14 +96,12 @@ if (FALSE) {
 }
 
 ## Example using tune_params explicitly
-set.seed(0)
-tuned_wf <- tune_params(wf, data = training$data, size = 2) # setting size artificially small for example
+tuned_wf <- tune_params(wf, data = training$data, size = 2, seed = 0) # setting size artificially small for example
 fitted1 <- fit(tuned_wf, training$data)
 pred1 <- predict(fitted1, training$data, "prob")
 
 ## Example using tune_params implicitly
-set.seed(0)
-fitted2 <- as.tunefit(wf, size = 2) \%>\%
+fitted2 <- as.tunefit(wf, size = 2, seed = 0) \%>\%
   wpor::fit(training$data)
 pred2 <- predict(fitted2, training$data, "prob")
 

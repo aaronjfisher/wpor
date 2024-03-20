@@ -25,7 +25,7 @@ lightgbm_grid <- function(size, marginal_len = 20, num_threads = 1) {
     learning_rate = log_seq(10^-5, .25, length = marginal_len),
     max_leaves = round(log_seq(2, 50, length = marginal_len)),
     bagging_fraction = seq(.1, 1, length = marginal_len),
-    min_data_in_leaf = round(log_seq(4, 50, length = marginal_len)),
+    min_data_in_leaf = round(log_seq(10, 50, length = marginal_len)),
     min_gain_to_split = log_seq(10^-10, 10^-2, length = marginal_len),
     num_threads = num_threads
   )

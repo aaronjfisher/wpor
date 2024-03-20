@@ -1,4 +1,5 @@
 #renv::install('aaronjfisher/wpor@af/broader-sims')
+#renv::install('aaronjfisher/wpor')
 #renv::install('..')
 #renv::snapshot()
 #devtools::document('..')
@@ -43,7 +44,8 @@ simulate_from_df <- function(
       print(sim_df[i,])
     }
     
-    set.seed(sim_df$seed[i])
+    seed_i <- sim_df$seed[i]
+    set.seed(seed_i)
     n_obs <- sim_df$n_obs[i]
     
     #      _                 _       _
@@ -143,7 +145,7 @@ simulate_from_df <- function(
       treatment_wf <- (workflow() %>%
                          add_model(set_mode(mod_spec, "classification")) %>%
                          add_formula(treatment_formula) %>%
-                         tune_params(data = train_data, verbose = verbose, size = size, ...))
+                         tune_params(data = train_data, verbose = verbose, size = size, seed = seed_i, ...))
       out_marginal_wf <- workflow() %>%
         add_model(set_mode(mod_spec, "regression")) %>%
         add_formula(outcome_marginal_formula)
@@ -151,17 +153,17 @@ simulate_from_df <- function(
         add_model(set_mode(mod_spec, "regression")) %>%
         add_formula(outcome_single_formula)
       if(verbose) message(Sys.time(),': ','tuning outcome 0...')
-      outcome_0_separate_wf <- tune_params(out_marginal_wf, data = filter(train_data, treatment == 0),verbose = verbose, size = size, ...)
+      outcome_0_separate_wf <- tune_params(out_marginal_wf, data = filter(train_data, treatment == 0),verbose = verbose, size = size, seed = seed_i, ...)
       if(verbose) message(Sys.time(),': ','tuning outcome 1...')
-      outcome_1_separate_wf <- tune_params(out_marginal_wf, data = filter(train_data, treatment == 1),verbose = verbose, size = size, ...)
+      outcome_1_separate_wf <- tune_params(out_marginal_wf, data = filter(train_data, treatment == 1),verbose = verbose, size = size, seed = seed_i, ...)
       if(verbose) message(Sys.time(),': ','tuning outcome marginal...')
-      outcome_marginal_wf <- tune_params(out_marginal_wf, data = train_data, verbose = verbose, size = size, ...)
+      outcome_marginal_wf <- tune_params(out_marginal_wf, data = train_data, verbose = verbose, size = size, seed = seed_i, ...)
       if(verbose) message(Sys.time(),': ','tuning outcome single...')
-      outcome_single_wf <- tune_params(out_single_wf, data = train_data, verbose = verbose, size = size, ...)
+      outcome_single_wf <- tune_params(out_single_wf, data = train_data, verbose = verbose, size = size, seed = seed_i, ...)
       effect_wf <- workflow() %>%
         add_model(set_mode(mod_spec, "regression")) %>%
         add_formula(effect_formula) %>%
-        as.tunefit(verbose = verbose, size = size, ...)
+        as.tunefit(verbose = verbose, size = size, seed = seed_i, ...)
 
     } else if(sim_df$learners[i] == c('lightgbm')){
 
@@ -170,6 +172,7 @@ simulate_from_df <- function(
         tune_params(
           verbose = verbose, 
           grid = lightgbm_grid(size, num_threads = 1),
+          seed = seed_i,
           ...)
       }
       treatment_wf <- lightgbm_spec(formula = treatment_formula, mode = "classification") %>%
@@ -187,7 +190,7 @@ simulate_from_df <- function(
       if(verbose) message(Sys.time(),': ','tuning outcome single...')
       outcome_single_wf <- tune_gbm(out_single_wf, data = train_data, ...)
       effect_wf <- lightgbm_spec(formula = effect_formula, mode = "regression") %>%
-        as.tunefit(verbose = verbose, size = size, grid = lightgbm_grid(size), ...)
+        as.tunefit(verbose = verbose, size = size, grid = lightgbm_grid(size), seed = seed_i, ...)
 
     } else if(sim_df$learners[i]=='cvboost'){
 

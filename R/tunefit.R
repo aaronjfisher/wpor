@@ -4,9 +4,12 @@
 #' @param data a dataset to train on
 #' @param v number of cv folds to use in resamples; overwritten by resamples, if provided.
 #' @param size number of param sets to evaluate
-#' @param resamples An ‘rset()’ object object used to evaluate wf
+#' @param resamples An ‘rset()’ object object used to evaluate wf. Defaults to rsample::vfold_cv(data, v).
 #' @param burnin how many folds to examine before discarding
-#' poorly performing parameter sets
+#' poorly performing parameter sets. Defaults to length(resamples$splits).
+#' @param seed if specified, temporarily changes the seed to ensure 
+#' reproducibility when computing resamples. The original seed of the calling
+#' environment is restored before the tune_params function completes.
 #' @param save_performance `r lifecycle::badge('experimental')` save performance
 #' metrics as an attribute. If using as.tunefit, this attribute
 #' will also be saved in the final, fitted workflow.
@@ -20,13 +23,26 @@ tune_params <- function(
     grid = NULL,
     metric = NULL,
     v = 10,
-    resamples = rsample::vfold_cv(data, v),
+    resamples = NULL,
     alpha = 0.05,
-    burnin = length(resamples$splits),
+    burnin = NULL,
+    seed = NULL,
     verbose = FALSE,
     save_performance = FALSE,
     size = 10 # will be overwritten by grid
     ) {
+  
+  if(!is.null(seed)){
+    if (exists(".Random.seed", .GlobalEnv)) {
+      previous_seed <- .GlobalEnv$.Random.seed
+    } else {
+      previous_seed <- NULL
+    }
+    set.seed(seed)
+  }
+  
+  if(is.null(resamples)) resamples <- rsample::vfold_cv(data, v)
+  if(is.null(burnin)) burnin <- length(resamples$splits)
   v <- length(resamples$splits)
   stopifnot(burnin <= v)
   stopifnot(burnin >= 2)
@@ -117,6 +133,14 @@ tune_params <- function(
     )
   }
 
+  if(!is.null(seed)){
+    if (!is.null(previous_seed)) {
+      .GlobalEnv$.Random.seed <- previous_seed
+    } else {
+      rm(".Random.seed", envir = .GlobalEnv)
+    }
+  }
+  
   return(out)
 }
 
@@ -184,14 +208,12 @@ metric_neg_log_lik <- function(
 #' }
 #'
 #' ## Example using tune_params explicitly
-#' set.seed(0)
-#' tuned_wf <- tune_params(wf, data = training$data, size = 2) # setting size artificially small for example
+#' tuned_wf <- tune_params(wf, data = training$data, size = 2, seed = 0) # setting size artificially small for example
 #' fitted1 <- fit(tuned_wf, training$data)
 #' pred1 <- predict(fitted1, training$data, "prob")
 #'
 #' ## Example using tune_params implicitly
-#' set.seed(0)
-#' fitted2 <- as.tunefit(wf, size = 2) %>%
+#' fitted2 <- as.tunefit(wf, size = 2, seed = 0) %>%
 #'   wpor::fit(training$data)
 #' pred2 <- predict(fitted2, training$data, "prob")
 #'

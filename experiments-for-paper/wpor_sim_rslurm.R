@@ -6,7 +6,7 @@ size = 20
 alpha = 0.05
 v = 10
 burnin = 3
-nsim <- 200
+nsim <- 600
 nodes <- 1000
 
 #tuned_df <- readRDS('pretune_results.rds')
@@ -25,7 +25,7 @@ simultaneous <- 50
 
 
 results_tbl <- expand.grid(
-  learners = c('lightgbm'), #'parsnip_random_forest', 'rlearner_package' ,'cvboost'
+  learners = c('lightgbm', 'parsnip_random_forest', 'rlearner_package'),# ,'cvboost')
   n_obs = c(250,500,1000),
   p = c(10),
   sigma = 1,#c(0.5, 1, 2),#, 3),
@@ -100,13 +100,18 @@ mse_NA
 if(FALSE){
   # workspace for testing
   # source('wpor_sim_fun.R')
-  s1 <- simulate_from_df(
-    sim_df = results_tbl[9,],
-    pretuned = tuned_df,
-    mse_NA = mse_NA,
-    verbose = TRUE,
-    size = 2, alpha = alpha, v = 2, burnin = 2
-  )
+  s1 <- 
+    #filter(results_tbl, setup == 'F', seed == 523, n_obs == 250) %>%
+      #  pseudo_DR_single   weight_1    54.3         -0.997  
+    filter(results_tbl, setup == 'A', seed == 343, n_obs == 500) %>%
+      #  pseudo_DR_single   weight_DR_X  30.3      0.666 
+      simulate_from_df(
+      sim_df = .,
+      pretuned = tuned_df,
+      mse_NA = mse_NA,
+      verbose = TRUE,
+      size = size, alpha = alpha, v = v, burnin = burnin
+    )
   s1$tune_time
   s1$crossfit_time
   s1$por_time
