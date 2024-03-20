@@ -7,7 +7,7 @@
 #' @param resamples An ‘rset()’ object object used to evaluate wf. Defaults to rsample::vfold_cv(data, v).
 #' @param burnin how many folds to examine before discarding
 #' poorly performing parameter sets. Defaults to length(resamples$splits).
-#' @param seed if specified, temporarily changes the seed to ensure 
+#' @param seed if specified, temporarily changes the seed to ensure
 #' reproducibility when computing resamples. The original seed of the calling
 #' environment is restored before the tune_params function completes.
 #' @param save_performance `r lifecycle::badge('experimental')` save performance
@@ -31,8 +31,7 @@ tune_params <- function(
     save_performance = FALSE,
     size = 10 # will be overwritten by grid
     ) {
-  
-  if(!is.null(seed)){
+  if (!is.null(seed)) {
     if (exists(".Random.seed", .GlobalEnv)) {
       previous_seed <- .GlobalEnv$.Random.seed
     } else {
@@ -40,9 +39,9 @@ tune_params <- function(
     }
     set.seed(seed)
   }
-  
-  if(is.null(resamples)) resamples <- rsample::vfold_cv(data, v)
-  if(is.null(burnin)) burnin <- length(resamples$splits)
+
+  if (is.null(resamples)) resamples <- rsample::vfold_cv(data, v)
+  if (is.null(burnin)) burnin <- length(resamples$splits)
   v <- length(resamples$splits)
   stopifnot(burnin <= v)
   stopifnot(burnin >= 2)
@@ -133,14 +132,14 @@ tune_params <- function(
     )
   }
 
-  if(!is.null(seed)){
+  if (!is.null(seed)) {
     if (!is.null(previous_seed)) {
       .GlobalEnv$.Random.seed <- previous_seed
     } else {
       rm(".Random.seed", envir = .GlobalEnv)
     }
   }
-  
+
   return(out)
 }
 

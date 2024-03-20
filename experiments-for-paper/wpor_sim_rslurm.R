@@ -2,10 +2,10 @@ library("dplyr")
 library("rslurm")
 source('wpor_sim_fun.R')
 
-size = 20
+size = 25
 alpha = 0.05
 v = 10
-burnin = 3
+burnin = 5
 nsim <- 600
 nodes <- 1000
 
