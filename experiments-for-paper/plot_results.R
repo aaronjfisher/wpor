@@ -1,8 +1,7 @@
 library(tidyverse)
 library(latex2exp)
 
-#job_path <- '2024-02-14_cov_250'
-job_path <- '2024-02-15_cov_600'
+job_path <- '2024-03-20_ate_600'
 
 slurm_dir <- paste0('_rslurm_', gsub('-','', job_path),'/')
 results <- readRDS(paste0(slurm_dir, 'combined_results.rds'))
@@ -10,7 +9,7 @@ str(readRDS(paste0(slurm_dir, 'more_args.RDS')))
 
 sum_results <- results %>%
   filter(!is.na(setup)) %>%
-  tidyr::unnest(pred_mse) %>%
+  tidyr::unnest(mse) %>%
   mutate(pseudo = ifelse(pseudo=='pseudo_DR_single', 'DR', pseudo)) %>%
   mutate(pseudo = ifelse(pseudo=='pseudo_cov', 'Cov', pseudo)) %>%
   mutate(pseudo = ifelse(pseudo=='pseudo_U', 'U', pseudo)) %>%
@@ -25,30 +24,31 @@ sum_results <- results %>%
   summarize(mean_pred_mse = mean(pred_mse),
             n_sim = n(),
             se_pred_mse = sd(pred_mse)/sqrt(n()),
+            min_mse = min(pred_mse),
+            max_mse = max(pred_mse),
             lower_pred_mse = pmax(0.0001, mean_pred_mse - qnorm(0.975) * se_pred_mse),
             upper_pred_mse = mean_pred_mse + qnorm(0.975) * se_pred_mse) %>%
   mutate(
     n_obs = as.numeric(n_obs)
     )
 
+tidyr::unnest(results, mse) %>%
+  filter(learners == 'lightgbm', weights != 'weight_1') %>% 
+  as.data.frame %>% 
+  filter(pred_mse > 5)
+
 my_learner = 'lightgbm'
 #my_learner = 'parsnip_random_forest'
 
 
 mypdf <- function(file, ...){
-  pdf(file= paste0('plots/',Sys.Date(),'_', file,'.pdf'), ...)
+  pdf(file= paste0('plots/',Sys.Date(),'_', file,'_',job_path,'.pdf'), ...)
 }
 
 
 #https://uliniemann.com/blog/2022-02-21-math-annotations-in-ggplot2-with-latex2exp/
 #TeX(r"($(A-\hat{\pi}(X))^2$ )")
 
-# weight_labels = 
-#   list('weight_1' = 1,
-#        'weight_U_AX' = expression('Var(U|A,X)'^{-1}),
-#        'weight_U_X' = expression('Var(U|X)'^{-1}),
-#        'weight_DR_AX' = expression('Var(DR|A,X)'^{-1}),
-#        'weight_DR_X' = expression('Var(DR|X)'^{-1}))
 weight_simple_labels = 
   list('weight_1' = 1,
        'weight_U_AX' = TeX(r"($(\textit{A}-\hat{\pi}(\textit{X}))^2$ )"),
@@ -57,7 +57,7 @@ weight_simple_labels =
 
 
 
-mypdf(paste0('main-comparison_',my_learner), width = 4.5, height = 8.5)
+mypdf(paste0('main-comparison_',my_learner), width = 6, height = 8.5)
 
 sum_results %>%
   filter(
@@ -123,7 +123,7 @@ sum_results %>%
   filter(
     pseudo != 'rlearner_package',
     learners == my_learner,
-    pseudo %in% c('DR','U','T')
+    pseudo %in% c('DR','Cov','U','T')
     ,weights %in% c('weight_1', 'weight_U_AX','weight_DR_X','weight_DR_AX','weight_U_X')
   ) %>%
   ggplot(aes(x = n_obs, y = log(mean_pred_mse), 
@@ -140,6 +140,87 @@ sum_results %>%
   ) +
   theme(legend.position = 'bottom') 
 dev.off()
+
+
+mypdf(paste0('slides-RL-',my_learner,'-F_',job_path), width = 4, height = 3)
+sum_results %>%
+  filter(
+    pseudo == 'U',
+    learners == my_learner,
+    setup == 'F'
+    ,weights %in% c('weight_1', 'weight_U_AX')
+  ) %>%
+  ggplot(aes(x = n_obs, y = log(mean_pred_mse), 
+             col = weights, fill = weights)) +
+  geom_line(aes(group = weights)) + 
+  geom_ribbon(aes(ymin = log(lower_pred_mse), ymax = log(upper_pred_mse)), alpha = .3, col=NA) +
+  theme_bw() +
+  scale_fill_discrete('Weights', labels = weight_simple_labels) +
+  scale_colour_discrete('Weights', labels = weight_simple_labels) +
+  labs(
+    #title = paste('Log MSE on Simulated Data -', my_learner),
+    x= 'Sample size',
+    y= 'Log(mean squared error)'
+  ) +
+  theme(legend.position = 'right')
+dev.off()
+
+
+mypdf(paste0('slides-all-',my_learner,'-F_',job_path), width = 4, height = 6)
+sum_results %>%
+  filter(
+    pseudo %in% c('DR','Cov','U'),
+    learners == my_learner,
+    setup == 'F'
+    ,weights %in% c('weight_1', 'weight_U_AX','weight_DR_X')
+  ) %>%
+  ggplot(aes(x = n_obs, y = log(mean_pred_mse), 
+             col = weights, fill = weights)) +
+  geom_line(aes(group = weights)) + 
+  geom_ribbon(aes(ymin = log(lower_pred_mse), ymax = log(upper_pred_mse)), alpha = .3, col=NA) +
+  facet_grid(pseudo~.)+
+  theme_bw() +
+  scale_fill_discrete('Weights', labels = weight_simple_labels) +
+  scale_colour_discrete('Weights', labels = weight_simple_labels) +
+  labs(
+    #title = paste('Log MSE on Simulated Data -', my_learner),
+    x= 'Sample size',
+    y= 'Log(mean squared error)'
+  ) +
+  theme(legend.position = 'right')
+dev.off()
+
+mypdf(paste0('slides-all-',my_learner,'-A:F_',job_path), width = 12, height = 5.5)
+sum_results %>%
+  filter(
+    pseudo %in% c('DR','Cov','U'),
+    learners == my_learner,
+    #setup !='F'
+    ,weights %in% c('weight_1', 'weight_U_AX','weight_DR_X')
+  ) %>%
+  ggplot(aes(x = n_obs, y = log(mean_pred_mse), 
+             col = weights, fill = weights)) +
+  geom_line(aes(group = weights)) + 
+  geom_ribbon(aes(ymin = log(lower_pred_mse), ymax = log(upper_pred_mse)), alpha = .3, col=NA) +
+  facet_grid(pseudo~setup)+
+  theme_bw() +
+  scale_fill_discrete('Weights', labels = weight_simple_labels) +
+  scale_colour_discrete('Weights', labels = weight_simple_labels) +
+  labs(
+    #title = paste('Log MSE on Simulated Data -', my_learner),
+    x= 'Sample size',
+    y= 'Log(mean squared error)'
+  ) +
+  theme(legend.position = 'right')
+dev.off()
+
+
+
+
+
+
+
+
 
 results_table <- sum_results %>%
   filter(
@@ -168,7 +249,7 @@ sum_results %>%
   facet_grid(setup~.)
 dev.off()
 
-## T learners does similar to DR on E,F, slightly better on D, but much worse on A,B,C.
+## T learners does similar to DR on E, slightly better on D & E, but much worse on A,B,C.
 sum_results %>%
   filter( (pseudo == 'DR' & weights == 'weight_DR_X') |
           (pseudo == 'T' & weights == 'weight_1'),

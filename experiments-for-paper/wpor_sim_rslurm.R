@@ -60,8 +60,8 @@ mse_NA <- expand.grid(
     ,'weight_U_X'
     ,'weight_U_AX'
     ,'weight_DR_X'
-    #,'weight_DR_AX' #!! NARROW !!
-    #,'weight_DR_alt_AX' #!! NARROW !!
+    ,'weight_DR_AX'
+    ,'weight_DR_alt_AX' 
   ),
   pred_mse = NA,
   ate_error = NA,
