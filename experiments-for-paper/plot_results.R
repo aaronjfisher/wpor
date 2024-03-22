@@ -112,7 +112,7 @@ weight_expanded_labels =
        'weight_U_AX' = TeX(r"($(A-\hat{\pi}^2)$ )"),
        'weight_U_X' = TeX(r"($\frac{(\hat{\pi}\hat{\kappa})^{2}}{\hat{\pi}^{3}+\hat{\kappa}^{3}}$ )"),
        'weight_DR_AX' = TeX(
-         r"(\frac{A}{\hat{\pi}^{2}}+\frac{1-A}{\hat{\kappa}^{2}})"
+         r"($\frac{A}{\hat{\pi}^{2}}+\frac{1-A}{\hat{\kappa}^{2}}$)"
          ),
        'weight_DR_X' = TeX(r"(\hat{\nu})"))
 
