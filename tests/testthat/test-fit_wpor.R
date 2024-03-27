@@ -140,3 +140,116 @@ test_that("Errors happen iff not enough workflows are specified", {
     )
   })
 })
+
+
+
+
+test_that("Bad formulas throw errors", {
+  treatment_bad_formula <- formula(paste("x.1 ~", rhs))
+  outcome_marginal_bad_formula <- formula(paste("treatment ~", rhs))
+  outcome_single_bad_formula <- formula(paste("outcome ~ ", rhs))
+  effect_bad_formula <- formula(paste("treatment ~", rhs))
+
+  treatment_bad_wf <- workflow() %>%
+    add_model(set_mode(logistic_reg(), "classification")) %>%
+    add_formula(treatment_bad_formula)
+  outcome_marginal_bad_wf <- workflow() %>%
+    add_model(set_mode(linear_reg(), "regression")) %>%
+    add_formula(outcome_marginal_bad_formula)
+  outcome_single_bad_wf <- workflow() %>%
+    add_model(set_mode(linear_reg(), "regression")) %>%
+    add_formula(outcome_single_bad_formula)
+  effect_bad_wf <- workflow() %>%
+    add_model(set_mode(linear_reg(), "regression")) %>%
+    add_formula(effect_bad_formula)
+
+  expect_error({
+    fitted <- fit_wpor(
+      data = train_data,
+      outcome_marginal_wf = outcome_marginal_bad_wf, # bad workflow!
+      outcome_1_separate_wf = outcome_marginal_wf,
+      outcome_0_separate_wf = outcome_marginal_wf,
+      outcome_single_wf = outcome_single_wf,
+      treatment_wf = treatment_wf,
+      effect_wf = effect_wf,
+      pseudo_fun = pseudo_DR_single,
+      weight_fun = weight_DR_X,
+      v = 2
+    )
+  })
+
+  expect_error({
+    fitted <- fit_wpor(
+      data = train_data,
+      outcome_marginal_wf = outcome_marginal_wf,
+      outcome_1_separate_wf = outcome_marginal_bad_wf, # bad workflow!
+      outcome_0_separate_wf = outcome_marginal_wf,
+      outcome_single_wf = outcome_single_wf,
+      treatment_wf = treatment_wf,
+      effect_wf = effect_wf,
+      pseudo_fun = pseudo_DR_single,
+      weight_fun = weight_DR_X,
+      v = 2
+    )
+  })
+
+  expect_error({
+    fitted <- fit_wpor(
+      data = train_data,
+      outcome_marginal_wf = outcome_marginal_wf,
+      outcome_1_separate_wf = outcome_marginal_wf,
+      outcome_0_separate_wf = outcome_marginal_bad_wf, # bad workflow!
+      outcome_single_wf = outcome_single_wf,
+      treatment_wf = treatment_wf,
+      effect_wf = effect_wf,
+      pseudo_fun = pseudo_DR_single,
+      weight_fun = weight_DR_X,
+      v = 2
+    )
+  })
+
+  expect_error({
+    fitted <- fit_wpor(
+      data = train_data,
+      outcome_marginal_wf = outcome_marginal_wf,
+      outcome_1_separate_wf = outcome_marginal_wf,
+      outcome_0_separate_wf = outcome_marginal_wf,
+      outcome_single_wf = outcome_single_bad_wf, # bad workflow!
+      treatment_wf = treatment_wf,
+      effect_wf = effect_wf,
+      pseudo_fun = pseudo_DR_single,
+      weight_fun = weight_DR_X,
+      v = 2
+    )
+  })
+
+  expect_error({
+    fitted <- fit_wpor(
+      data = train_data,
+      outcome_marginal_wf = outcome_marginal_wf,
+      outcome_1_separate_wf = outcome_marginal_wf,
+      outcome_0_separate_wf = outcome_marginal_wf,
+      outcome_single_wf = outcome_single_wf,
+      treatment_wf = treatment_wf,
+      effect_wf = effect_bad_wf, # bad workflow!
+      pseudo_fun = pseudo_DR_single,
+      weight_fun = weight_DR_X,
+      v = 2
+    )
+  })
+
+  expect_no_error({
+    fitted <- fit_wpor(
+      data = train_data,
+      outcome_marginal_wf = outcome_marginal_wf,
+      outcome_1_separate_wf = outcome_marginal_wf,
+      outcome_0_separate_wf = outcome_marginal_wf,
+      outcome_single_wf = outcome_single_wf,
+      treatment_wf = treatment_wf,
+      effect_wf = effect_wf,
+      pseudo_fun = pseudo_DR_single,
+      weight_fun = weight_DR_X,
+      v = 2
+    )
+  })
+})

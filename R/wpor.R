@@ -94,6 +94,30 @@ check_dat <- function(data) {
   data
 }
 
+check_wf <- function(
+    wf, data,
+    lhs_is = NULL,
+    rhs_lacks = NULL,
+    rhs_has = NULL) {
+  get_y_name <- paste0("get_y.", class(wf)[1])
+  if (exists(get_y_name)) {
+    if (any(get_y(wf, data) != data[[lhs_is]])) {
+      stop("Incorrect workflow specification. Left-hand side should be: ", lhs_is)
+    }
+  }
+
+  if ("workflow" %in% class(wf)) {
+    rhs <- all.vars(wf$pre$actions$formula$formula)[-1]
+    rhs_lacks <- unique(rhs_lacks, lhs_is) # avoid circular formulas
+    if (any(rhs_lacks %in% rhs)) {
+      stop("Incorrect workflow specification. Right-hand side omit: ", paste(rhs_lacks, collapse = ", "))
+    }
+    if (any(!rhs_has %in% rhs)) {
+      stop("Incorrect workflow specification. Right-hand side must have: ", paste(rhs_has, collapse = ", "))
+    }
+  }
+}
+
 #' Apply weighted pseudo-outcome regression
 #' @param data a data.frame or tibble containing columns `treatment` and `outcome`.
 #' @param outcome_1_separate_wf,outcome_0_separate_wf,outcome_single_wf,outcome_marginal_wf,treatment_wf tidymodel workflows
@@ -123,6 +147,12 @@ crossfit_nuisance <- function(
   stopifnot(all(data$treatment %in% 0:1))
 
   data <- check_dat(data)
+
+  check_wf(outcome_marginal_wf, data, lhs_is = "outcome", rhs_lacks = "treatment")
+  check_wf(outcome_single_wf, data, lhs_is = "outcome", rhs_has = "treatment")
+  check_wf(outcome_0_separate_wf, data, lhs_is = "outcome", rhs_lacks = "treatment")
+  check_wf(outcome_1_separate_wf, data, lhs_is = "outcome", rhs_lacks = "treatment")
+  check_wf(treatment_wf, data, lhs_is = "treatment", rhs_lacks = "outcome")
 
   if (
     all(is.na(outcome_marginal_wf)) &
@@ -292,6 +322,8 @@ fit_wpor <- function(data,
     )
   }
   data <- check_dat(data)
+
+  check_wf(effect_wf, data, lhs_is = "pseudo", rhs_lacks = c("outcome", "treatment"))
 
   needed_cols <- unique(formalArgs(pseudo_fun), formalArgs(weight_fun))
   missing_cols <- lapply(nuisance_tbl, \(z) all(is.na(z))) %>%
