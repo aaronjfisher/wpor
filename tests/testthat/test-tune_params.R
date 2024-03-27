@@ -1,6 +1,9 @@
 # Create a dataset where x only matters in an "active" subgroup
 # Weighting the active group should produce a small penalty
 # Weighting the non-active group should produce a large penalty
+library(tidymodels)
+library(dplyr)
+
 set.seed(0)
 n <- 100
 p <- 10
@@ -24,10 +27,6 @@ form <- formula(paste("treatment ~", rhs))
 
 
 test_that("weights are used in tune_params for lasso, but not in standard tune::tune_grid", {
-  library(tidymodels)
-  library(dplyr)
-
-
   wf_unweighted <- workflow() %>%
     add_model(linear_reg(
       penalty = tune(),
@@ -102,7 +101,6 @@ test_that("Test that tune_params works for lightgbm & workflows without errors",
   # ?tune_params and ?as.tunefit examples.
 
   # Simulate data
-  library("dplyr")
 
 
   set.seed(0)
@@ -138,7 +136,6 @@ test_that("Test that tune_params works for lightgbm & workflows without errors",
   # matplot(attributes(tuned_gbm)$tune_results$performance, type = "l")
 
 
-  library("tidymodels")
   # Define a tidymodels workflow
   mod_spec <- boost_tree(min_n = tune(), learn_rate = tune()) %>%
     set_engine("xgboost")
