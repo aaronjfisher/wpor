@@ -111,10 +111,10 @@ check_dat <- function(data) {
 crossfit_nuisance <- function(
     data,
     treatment_wf,
-    outcome_marginal_wf,
-    outcome_single_wf,
-    outcome_1_separate_wf = outcome_marginal_wf,
-    outcome_0_separate_wf = outcome_marginal_wf,
+    outcome_marginal_wf = NA,
+    outcome_single_wf = NA,
+    outcome_1_separate_wf = NA,
+    outcome_0_separate_wf = NA,
     min_prob = 0.01,
     v = 10,
     cf_order = 2,
@@ -123,6 +123,23 @@ crossfit_nuisance <- function(
   stopifnot(all(data$treatment %in% 0:1))
 
   data <- check_dat(data)
+
+  if (
+    all(is.na(outcome_marginal_wf)) &
+      all(is.na(outcome_single_wf)) &
+      (all(is.na(outcome_1_separate_wf)) |
+        all(is.na(outcome_0_separate_wf)))
+  ) {
+    stop("Users must specify at least one of the following:
+      1) outcome_marginal_wf,
+      2) outcome_single_wf, or
+      3) both outcome_1_separate_wf & outcome_0_separate_wf.")
+  }
+
+  if (all(is.na(outcome_marginal_wf))) outcome_marginal_wf <- get_na_workflow()
+  if (all(is.na(outcome_single_wf))) outcome_single_wf <- get_na_workflow()
+  if (all(is.na(outcome_1_separate_wf))) outcome_1_separate_wf <- get_na_workflow()
+  if (all(is.na(outcome_0_separate_wf))) outcome_0_separate_wf <- get_na_workflow()
 
 
   if (cf_order == 2) {
@@ -276,6 +293,20 @@ fit_wpor <- function(data,
   }
   data <- check_dat(data)
 
+  needed_cols <- unique(formalArgs(pseudo_fun), formalArgs(weight_fun))
+  missing_cols <- lapply(nuisance_tbl, \(z) all(is.na(z))) %>%
+    unlist() %>%
+    which() %>%
+    names() %>%
+    intersect(needed_cols)
+  if (length(missing_cols) > 0) {
+    stop(
+      "Columns ", paste(missing_cols, collapse = ", "),
+      " were not found in nuisance table. Please ensure that
+      the appropriate workflows were supplied."
+    )
+  }
+
   stopifnot(!any(c(".weights", "pseudo") %in% names(nuisance_tbl)))
   stopifnot(all(c(".row") %in% names(nuisance_tbl)))
 
@@ -287,6 +318,9 @@ fit_wpor <- function(data,
     do.call(weight_fun, .)
   if (standardize_weights) wts <- wts / mean(wts)
   nuisance_tbl$.weights <- hardhat::importance_weights(wts)
+  stopifnot(all(!is.na(nuisance_tbl$pseudo)))
+  stopifnot(all(!is.na(nuisance_tbl$.weights)))
+
   if (verbose) message("Fitting effect model")
   dat_effect <- left_join(
     nuisance_tbl[, c(".row", "pseudo", ".weights")],
