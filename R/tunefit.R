@@ -41,14 +41,14 @@ tune_params <- function(
     set.seed(seed)
   }
 
-  if (is.null(resamples)){
-    if(is.null(group)){
+  if (is.null(resamples)) {
+    if (is.null(group)) {
       resamples <- rsample::vfold_cv(data, v)
     } else {
-      resamples <- rsample::group_vfold_cv(data, v=v, group=group)
+      resamples <- rsample::group_vfold_cv(data, v = v, group = group)
     }
   }
-  stopifnot(all(data == resamples))
+  stopifnot(all(data == resamples$splits[[1]]$data))
   if (is.null(burnin)) burnin <- length(resamples$splits)
   v_updated <- length(resamples$splits)
   stopifnot(burnin <= v_updated)
