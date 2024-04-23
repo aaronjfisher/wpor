@@ -57,7 +57,7 @@ weight_simple_labels =
 
 
 
-mypdf(paste0('main-comparison_',my_learner), width = 6, height = 8.5)
+mypdf(paste0('main-comparison_',my_learner), width = 5, height = 8.5)
 
 sum_results %>%
   filter(
@@ -134,7 +134,7 @@ sum_results %>%
   scale_fill_discrete('Weights', labels = weight_expanded_labels) +
   scale_colour_discrete('Weights', labels = weight_expanded_labels) +
   labs(
-    title = paste('Log MSE on Simulated Data -', my_learner),
+    #title = paste('Log MSE on Simulated Data -', my_learner),
     x= 'Sample size (n)',
     y= 'Log(mean squared error)'
   ) +
