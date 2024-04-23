@@ -29,7 +29,7 @@ results_tbl <- expand.grid(
   n_obs = c(500,1000,1500,2000),
   p = c(10),
   sigma = 1,#c(0.5, 1, 2),#, 3),
-  setup = 'E',#c('A','B','C','D','E'),
+  setup = c('A','B','C','D','E'),
   nuisance = c('estimated'),
   seed = 1:nsim,
   cf_order = 2:4,
