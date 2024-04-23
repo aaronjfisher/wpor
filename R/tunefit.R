@@ -27,6 +27,7 @@ tune_params <- function(
     alpha = 0.05,
     burnin = NULL,
     seed = NULL,
+    group = NULL,
     verbose = getOption("verbose"),
     save_performance = FALSE,
     size = 10 # will be overwritten by grid
@@ -40,10 +41,17 @@ tune_params <- function(
     set.seed(seed)
   }
 
-  if (is.null(resamples)) resamples <- rsample::vfold_cv(data, v)
+  if (is.null(resamples)){
+    if(is.null(group)){
+      resamples <- rsample::vfold_cv(data, v)
+    } else {
+      resamples <- rsample::group_vfold_cv(data, v=v, group=group)
+    }
+  }
+  stopifnot(all(data == resamples))
   if (is.null(burnin)) burnin <- length(resamples$splits)
-  v <- length(resamples$splits)
-  stopifnot(burnin <= v)
+  v_updated <- length(resamples$splits)
+  stopifnot(burnin <= v_updated)
   stopifnot(burnin >= 2)
 
   dat1 <- rsample::get_rsplit(resamples, 1) %>%
@@ -63,7 +71,7 @@ tune_params <- function(
 
   stopifnot(is.data.frame(grid))
   size <- nrow(grid)
-  performance <- matrix(NA, v, size)
+  performance <- matrix(NA, v_updated, size)
   skip_ind <- rep(FALSE, size)
 
   if (is.null(metric)) {
@@ -75,12 +83,12 @@ tune_params <- function(
     }
   }
 
-  for (i in 1:v) {
+  for (i in 1:v_updated) {
     ri <- rsample::get_rsplit(resamples, i)
     if (verbose) {
       message(
         "\nFold", i,
-        ifelse(burnin == v, "", paste0("(running ", sum(1 - skip_ind), "/", size, " param sets)")),
+        ifelse(burnin == v_updated, "", paste0("(running ", sum(1 - skip_ind), "/", size, " param sets)")),
         ": ",
         appendLF = FALSE
       )
@@ -115,7 +123,7 @@ tune_params <- function(
       }
     }
     if (sum(!skip_ind) == 1) {
-      if (verbose & i < v) message("\nStopping Early; 1 candidate left.", appendLF = FALSE)
+      if (verbose & i < v_updated) message("\nStopping Early; 1 candidate left.", appendLF = FALSE)
       break
     }
   }
