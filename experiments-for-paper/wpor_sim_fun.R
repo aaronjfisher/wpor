@@ -1,4 +1,4 @@
-#renv::install('aaronjfisher/wpor@af/broader-sims')
+#renv::install('aaronjfisher/wpor@group-cv')
 #renv::install('aaronjfisher/wpor')
 #renv::install('..')
 #renv::snapshot()
@@ -21,14 +21,14 @@ simulate_from_df <- function(
     return_specifications = FALSE,
     pretuned = NULL,
     time_limit = ifelse(is.null(pretuned), Inf, 60*30*nrow(sim_df)),
+    burnin = 3,
     size,
+    v = 10, # This is not the major source of slowdown, tuning is.
     ...){
   
   setTimeLimit(elapsed=time_limit)
   
   n_test <- 10000
-  cf_order <- 2
-  v <- 10 # This is not the major source of slowdown, tuning is.
   min_prob <- 0.01
   
   if(return_specifications){
@@ -47,6 +47,8 @@ simulate_from_df <- function(
     seed_i <- sim_df$seed[i]
     set.seed(seed_i)
     n_obs <- sim_df$n_obs[i]
+    cf_order <- sim_df$cf_order[i]
+    burnin_i <- min(cf_order, burnin)
     
     #      _                 _       _
     #  ___(_)_ __ ___  _   _| | __ _| |_ ___
@@ -140,39 +142,56 @@ simulate_from_df <- function(
           tree_depth = tune()
         )
       }
+      tune_parsnip <- function(mode, formula, data=train_data, ...){
+          if(cf_order>2){
+            nuisance_resamples <-  multiway_cf_folds(data, cf_order)
+          } else {
+            nuisance_resamples <- NULL
+          }
+          workflow() %>%
+           add_model(set_mode(mod_spec, mode)) %>%
+           add_formula(formula) %>%
+           tune_params(
+            data = data, verbose = verbose, seed = seed_i, 
+            size = size, v=v, burnin = burnin_i, 
+            resamples = nuisance_resamples, 
+            ...)
+      }
       
       if(verbose) message(Sys.time(),': ','tuning treatment...')
-      treatment_wf <- (workflow() %>%
-                         add_model(set_mode(mod_spec, "classification")) %>%
-                         add_formula(treatment_formula) %>%
-                         tune_params(data = train_data, verbose = verbose, size = size, seed = seed_i, ...))
-      out_marginal_wf <- workflow() %>%
-        add_model(set_mode(mod_spec, "regression")) %>%
-        add_formula(outcome_marginal_formula)
-      out_single_wf <- workflow() %>%
-        add_model(set_mode(mod_spec, "regression")) %>%
-        add_formula(outcome_single_formula)
+      treatment_wf <- tune_parsnip("classification", treatment_formula, ...)
+      out_marginal_wf <- tune_parsnip("regression",outcome_marginal_formula, ...)
+      out_single_wf <- tune_parsnip("regression", outcome_single_formula, ...)
       if(verbose) message(Sys.time(),': ','tuning outcome 0...')
-      outcome_0_separate_wf <- tune_params(out_marginal_wf, data = filter(train_data, treatment == 0),verbose = verbose, size = size, seed = seed_i, ...)
+      outcome_0_separate_wf <- tune_parsnip("regression", outcome_marginal_formula, filter(train_data, treatment == 0), ...)
       if(verbose) message(Sys.time(),': ','tuning outcome 1...')
-      outcome_1_separate_wf <- tune_params(out_marginal_wf, data = filter(train_data, treatment == 1),verbose = verbose, size = size, seed = seed_i, ...)
+      outcome_1_separate_wf <- tune_parsnip("regression", outcome_marginal_formula, filter(train_data, treatment == 1), ...)
       if(verbose) message(Sys.time(),': ','tuning outcome marginal...')
-      outcome_marginal_wf <- tune_params(out_marginal_wf, data = train_data, verbose = verbose, size = size, seed = seed_i, ...)
+      outcome_marginal_wf <- tune_parsnip("regression", outcome_marginal_formula, ...)
       if(verbose) message(Sys.time(),': ','tuning outcome single...')
-      outcome_single_wf <- tune_params(out_single_wf, data = train_data, verbose = verbose, size = size, seed = seed_i, ...)
+      outcome_single_wf <- tune_parsnip("regression", outcome_single_formula, ...)
       effect_wf <- workflow() %>%
         add_model(set_mode(mod_spec, "regression")) %>%
         add_formula(effect_formula) %>%
-        as.tunefit(verbose = verbose, size = size, seed = seed_i, ...)
+        as.tunefit(verbose = verbose, size = size, seed = seed_i, v=v, burnin = burnin_i, group = '.row', ...)
 
     } else if(sim_df$learners[i] == c('lightgbm')){
 
       if(verbose) message(Sys.time(),': ','tuning treatment...')
-      tune_gbm <- function(...){
+      
+      tune_gbm <- function(data, ...){
+        if(cf_order>2){
+            nuisance_resamples <-  multiway_cf_folds(data, cf_order)
+          } else {
+            nuisance_resamples <- NULL
+          }
         tune_params(
+          data = data,
           verbose = verbose, 
           grid = lightgbm_grid(size, num_threads = 1),
           seed = seed_i,
+          burnin = burnin_i,
+          resamples = nuisance_resamples,
           ...)
       }
       treatment_wf <- lightgbm_spec(formula = treatment_formula, mode = "classification") %>%
@@ -190,7 +209,7 @@ simulate_from_df <- function(
       if(verbose) message(Sys.time(),': ','tuning outcome single...')
       outcome_single_wf <- tune_gbm(out_single_wf, data = train_data, ...)
       effect_wf <- lightgbm_spec(formula = effect_formula, mode = "regression") %>%
-        as.tunefit(verbose = verbose, size = size, grid = lightgbm_grid(size), seed = seed_i, ...)
+        as.tunefit(verbose = verbose, size = size, grid = lightgbm_grid(size), seed = seed_i, v=v, burnin = burnin_i, group = '.row', ...)
 
     } else if(sim_df$learners[i]=='cvboost'){
 
@@ -289,6 +308,12 @@ simulate_from_df <- function(
     )
     sim_df$crossfit_treatment_nll[i] = 
       mean(-log(dbinom(as.numeric(nuisance_tbl$treatment==1), 1, nuisance_tbl$.pred_treatment)))
+    with(nuisance_tbl,
+      mean((as.numeric(treatment==1) - .pred_treatment)^2)
+    )
+    with(nuisance_tbl,
+         mean((as.numeric(treatment==0) - .pred_control)^2)
+    )
       # mean(-log(
       #   (nuisance_tbl$treatment==1)*nuisance_tbl$.pred_treatment +
       #   (nuisance_tbl$treatment==0)*(1-nuisance_tbl$.pred_treatment)
@@ -327,7 +352,8 @@ simulate_from_df <- function(
           pseudo_fun = mse_i$pseudo[j],
           weight_fun = mse_i$weights[j],
           standardize_weights = FALSE,
-          verbose = FALSE
+          verbose = FALSE,
+          cf_order = cf_order
         )
         
         if(return_specifications){

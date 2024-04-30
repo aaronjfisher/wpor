@@ -254,7 +254,7 @@ crossfit_nuisance <- function(
         filter(Var1 != Var2)
       apply(eg, 1, \(inds)
       data.frame(
-        .fold_id = paste(inds, collapse = "x"),
+        .fold_id = gsub("Fold", "", paste(p$.fold_id[inds], collapse = "x")),
         .pred_treatment = p$.pred_treatment[inds[1]],
         .pred_control = 1 - p$.pred_treatment[inds[1]],
         .pred_outcome_0_separate = p$.pred_outcome_0_separate[inds[2]],
@@ -274,7 +274,7 @@ crossfit_nuisance <- function(
         filter(Var1 != Var2, Var1 != Var3, Var2 != Var3)
       apply(eg, 1, \(inds)
       data.frame(
-        .fold_id = paste(inds, collapse = "x"),
+        .fold_id = gsub("Fold", "", paste(p$.fold_id[inds], collapse = "x")),
         .pred_treatment = p$.pred_treatment[inds[1]],
         .pred_control = 1 - p$.pred_treatment[inds[2]],
         .pred_outcome_0_separate = p$.pred_outcome_0_separate[inds[3]],
@@ -310,6 +310,7 @@ crossfit_nuisance <- function(
 #' @export
 fit_wpor <- function(data,
                      nuisance_tbl = NULL,
+                     cf_order = 2,
                      ...,
                      pseudo_fun, weight_fun, effect_wf,
                      standardize_weights = FALSE,
@@ -317,13 +318,26 @@ fit_wpor <- function(data,
   if (is.null(nuisance_tbl)) {
     nuisance_tbl <- crossfit_nuisance(
       data = data,
+      cf_order = cf_order,
       verbose = verbose,
       ...
     )
   }
   data <- check_dat(data)
+  cf_order_nuisance <- length(strsplit(nuisance_tbl$.fold_id[1], "x")[[1]]) + 1
+  if (cf_order != cf_order_nuisance) {
+    stop("cf_order does not match nuisance_tbl")
+  }
 
   check_wf(effect_wf, data, lhs_is = "pseudo", rhs_lacks = c("outcome", "treatment"))
+  if ("tunefit" %in% class(effect_wf) & cf_order > 2) {
+    if (is.null(effect_wf$tune_args$group)) {
+      warning('Setting effect_wf$tune_args$group <- ".row"')
+      effect_wf$tune_args$group <- ".row"
+    } else {
+      if (effect_wf$tune_args$group != ".row") stop('effect_wf$tune_args$group should be ".row" to avoid having the same individual in multiple splits.')
+    }
+  }
 
   needed_cols <- unique(formalArgs(pseudo_fun), formalArgs(weight_fun))
   missing_cols <- lapply(nuisance_tbl, \(z) all(is.na(z))) %>%
@@ -369,6 +383,8 @@ fit_wpor <- function(data,
   fitted
 }
 
+#' Higher order cross-fitting instructions with inverted train/test proportions.
+#' @export
 multiway_cf_folds <- function(data, v) {
   new_splits <- list()
   shuffled <- sample(nrow(data), replace = FALSE)

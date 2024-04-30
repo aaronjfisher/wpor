@@ -21,6 +21,7 @@ crossfit_nuisance(
 fit_wpor(
   data,
   nuisance_tbl = NULL,
+  cf_order = 2,
   ...,
   pseudo_fun,
   weight_fun,
