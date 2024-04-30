@@ -16,6 +16,7 @@ tune_params(
   alpha = 0.05,
   burnin = NULL,
   seed = NULL,
+  group = NULL,
   verbose = getOption("verbose"),
   save_performance = FALSE,
   size = 10
