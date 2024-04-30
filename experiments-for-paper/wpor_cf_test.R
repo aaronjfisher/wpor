@@ -6,13 +6,9 @@ size = 25
 alpha = 0.05
 v = 10
 burnin = 5
-nsim <- 100
+nsim <- 400
 nodes <- 1000
 
-#tuned_df <- readRDS('pretune_results.rds')
-tuned_df <- NULL
-#tuned_df <- readRDS('_rslurm_pretune_weighted/combined_results.rds')
-#tuned_df
 
 
 
@@ -51,18 +47,18 @@ results_tbl$mse <- vector('list', nrow(results_tbl))
 nrow(results_tbl)/nodes
 
 mse_NA <- expand.grid(
-  pseudo = c(#'pseudo_U',
+  pseudo = c('pseudo_U',
              'pseudo_DR_single',
-             #'pseudo_DR_separate', 
-             #'pseudo_cov', 
+             'pseudo_DR_separate', 
+             'pseudo_cov', 
              'T'),
   weights = c(
     'weight_1'
-    #,'weight_U_X'
-    #,'weight_U_AX'
-    #,'weight_DR_X'
-    #,'weight_DR_AX'
-    #,'weight_DR_alt_AX' 
+    ,'weight_U_X'
+    ,'weight_U_AX'
+    ,'weight_DR_X'
+    ,'weight_DR_AX'
+    ,'weight_DR_alt_AX' 
   ),
   pred_mse = NA,
   ate_error = NA,
@@ -108,7 +104,6 @@ if(FALSE){
       #  pseudo_DR_single   weight_DR_X  30.3      0.666 
       simulate_from_df(
       sim_df = .,
-      pretuned = tuned_df,
       mse_NA = mse_NA,
       verbose = TRUE,
       size = 8, alpha = alpha, burnin = burnin, v = v
@@ -142,45 +137,11 @@ if(FALSE){
     ),
     mse_NA = mse_NA,
     size = size, alpha = alpha,
-    pretuned = tuned_df
   )
   saveRDS(sjob, paste0(slurm_dir,'sjob.rds'))
   yaml::write_yaml(sjob,  paste0(slurm_dir,'sjob.yaml'))
 }
 
-
-# ## !! pure mclapply doesn't seem to work well! too slow.
-# library(parallel)
-# (cores <- ceiling(detectCores() *.8))
-# cl <- makePSOCKcluster(cores)
-# 
-# 
-# mc_out <- parLapply(
-#   cl = cl,
-#   X = results_list,
-#   fun = simulate_from_df,
-#   #size = size,
-#   #mc.cores = cores,
-#   mse_NA = mse_NA,
-#   pretuned = tuned_df,
-#   verbose = TRUE
-# )
-# stopCluster(cl)
-# saveRDS(mc_out, 'test_mc.rds')
-# 
-# mc_out <- mclapply(
-#   results_list,
-#   simulate_from_df,
-#   mc.cores = cores,
-#   mse_NA = mse_NA,
-#   pretuned = tuned_df,
-#   verbose = FALSE
-# )
-# mc_out <- parLapply(
-#   cl = cl,
-#   X = list(a=1, b=2), 
-#   fun = function(a) a %>% print
-# )
 
 job_tbl <- tibble(get_job_status(sjob)[[2]])
 job_tbl$time <- NA

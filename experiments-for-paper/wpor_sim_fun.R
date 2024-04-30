@@ -18,9 +18,7 @@ simulate_from_df <- function(
     mse_NA,
     nthread = 1, 
     verbose = FALSE,
-    return_specifications = FALSE,
-    pretuned = NULL,
-    time_limit = ifelse(is.null(pretuned), Inf, 60*30*nrow(sim_df)),
+    time_limit = Inf,
     burnin = 3,
     size,
     v = 10, # This is not the major source of slowdown, tuning is.
@@ -31,9 +29,6 @@ simulate_from_df <- function(
   n_test <- 10000
   min_prob <- 0.01
   
-  if(return_specifications){
-    sim_df$specifications <- vector('list', nrow(sim_df))
-  }
   
   
   for (i in 1:nrow(sim_df)){
@@ -109,24 +104,7 @@ simulate_from_df <- function(
     #  \__|\__,_|_| |_|\___|
     
     
-    if(!is.null(pretuned)){
-      stopifnot(!return_specifications)
-      pretuned_i <- pretuned %>%
-        filter(
-         learners == as.character(sim_df$learners[i]),
-         n_obs == 500, #sim_df$n_obs[i], !!!!
-         p == sim_df$p[i],
-         sigma == sim_df$sigma[i],
-         setup == sim_df$setup[i]
-        )
-      stopifnot(nrow(pretuned_i) == 1)
-      specifications <- pretuned_i$specifications[[1]]
-      treatment_wf <- specifications$treatment_wf
-      outcome_1_separate_wf <- specifications$outcome_1_separate_wf
-      outcome_0_separate_wf <- specifications$outcome_0_separate_wf
-      outcome_marginal_wf <- specifications$outcome_marginal_wf
-      outcome_single_wf <- specifications$outcome_single_wf
-    } else if(sim_df$learners[i] %in% c('parsnip_random_forest', 'parsnip_boost')){
+    if(sim_df$learners[i] %in% c('parsnip_random_forest', 'parsnip_boost')){
       if(sim_df$learners[i] == 'parsnip_random_forest'){
         mod_spec <- rand_forest(trees = tune(), min_n = tune())
       }
@@ -255,17 +233,6 @@ simulate_from_df <- function(
     }
     tune_time_i <- Sys.time()
     
-    if(return_specifications){
-      sim_df$specifications[[i]] <- list(
-        treatment_wf = treatment_wf,
-        outcome_marginal_wf = outcome_marginal_wf,
-        outcome_single_wf = outcome_single_wf,
-        outcome_1_separate_wf = outcome_1_separate_wf, 
-        outcome_0_separate_wf = outcome_0_separate_wf,
-        effect_wf = effect_wf
-      )
-    }
-    
     #                          __ _ _
     #   ___ _ __ ___  ___ ___ / _(_) |_
     #  / __| '__/ _ \/ __/ __| |_| | __|
@@ -336,39 +303,17 @@ simulate_from_df <- function(
           outcome_0_wf = outcome_0_separate_wf
         )
       } else {
-        spec_name_j <- with(mse_i[j,], paste0(pseudo, ':', weights))
-        if(!is.null(pretuned)){
-          effect_wf_j <- specifications[[spec_name_j]]
-          if('workflow' %in% class(effect_wf_j)){
-            effect_wf_j <- remove_case_weights(effect_wf_j) 
-          }
-        } else {
-          effect_wf_j <- effect_wf
-        }
+
         fitted_j <- fit_wpor(
           data = train_data,
           nuisance_tbl = nuisance_tbl,
-          effect_wf = effect_wf_j,
+          effect_wf = effect_wf,
           pseudo_fun = mse_i$pseudo[j],
           weight_fun = mse_i$weights[j],
           standardize_weights = FALSE,
           verbose = FALSE,
           cf_order = cf_order
         )
-        
-        if(return_specifications){
-          if('cvboost_fit' %in% class(fitted_j)){
-            spec_val_j <- tuned_boost_spec(
-              effect_wf$formula, effect_wf$mode, data = train_data,
-              fit_init = fitted_j)
-          } else if('tunedflow' %in% class(fitted_j)){
-            spec_val_j <- fitted_j$tuned
-          }else {
-            warning('unknown modeling type for pre-tuning')
-            spec_val_j <- effect_wf_j
-          }
-          sim_df$specifications[[i]][[spec_name_j]] <- spec_val_j
-        }
       }
       
       
