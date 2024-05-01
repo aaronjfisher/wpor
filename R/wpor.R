@@ -315,6 +315,7 @@ fit_wpor <- function(data,
                      pseudo_fun, weight_fun, effect_wf,
                      standardize_weights = FALSE,
                      verbose = TRUE) {
+  data <- check_dat(data)
   if (is.null(nuisance_tbl)) {
     nuisance_tbl <- crossfit_nuisance(
       data = data,
@@ -323,14 +324,12 @@ fit_wpor <- function(data,
       ...
     )
   }
-  data <- check_dat(data)
 
   cf_order_nuisance <- length(strsplit(nuisance_tbl$.fold_id[1], "x")[[1]]) + 1
   if (cf_order != cf_order_nuisance) {
     stop("cf_order does not match nuisance_tbl")
   }
 
-  check_wf(effect_wf, data, lhs_is = "pseudo", rhs_lacks = c("outcome", "treatment"))
   if ("tunefit" %in% class(effect_wf) & cf_order > 2) {
     if (is.null(effect_wf$tune_args$group)) {
       warning('Setting effect_wf$tune_args$group <- ".row"')
@@ -375,7 +374,8 @@ fit_wpor <- function(data,
     by = join_by(.row)
   ) %>%
     select(-outcome, -treatment)
-
+  check_wf(effect_wf, dat_effect, lhs_is = "pseudo", rhs_lacks = c("outcome", "treatment"))
+  
   fitted <- effect_wf %>%
     add_weights_column(".weights") %>%
     fit(dat_effect)
