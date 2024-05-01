@@ -1,7 +1,7 @@
 library(tidyverse)
 library(latex2exp)
 
-job_path <- '2024-03-20_ate_600'
+job_path <- '2024-04-30_ate_600'
 
 slurm_dir <- paste0('_rslurm_', gsub('-','', job_path),'/')
 results <- readRDS(paste0(slurm_dir, 'combined_results.rds'))
@@ -249,7 +249,7 @@ sum_results %>%
   facet_grid(setup~.)
 dev.off()
 
-## T learners does similar to DR on E, slightly better on D & E, but much worse on A,B,C.
+## T learners does similar to DR on E, slightly better on D & F, but much worse on A,B,C.
 sum_results %>%
   filter( (pseudo == 'DR' & weights == 'weight_DR_X') |
           (pseudo == 'T' & weights == 'weight_1'),
