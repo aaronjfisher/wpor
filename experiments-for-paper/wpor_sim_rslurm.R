@@ -12,7 +12,7 @@ nodes <- 1000
 
 simultaneous <- 50
 
-(job_path <- paste0(Sys.Date(),'_ate_', nsim))
+(job_path <- paste0(Sys.Date(),'_', nsim))
 
 (slurm_dir <- paste0('_rslurm_', gsub('-','', job_path),'/'))
 
