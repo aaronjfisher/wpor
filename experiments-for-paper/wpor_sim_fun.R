@@ -1,4 +1,3 @@
-#renv::install('aaronjfisher/wpor@group-cv')
 #renv::install('aaronjfisher/wpor')
 #renv::install('..')
 #renv::snapshot()
@@ -43,7 +42,8 @@ simulate_from_df <- function(
     set.seed(seed_i)
     n_obs <- sim_df$n_obs[i]
     cf_order <- sim_df$cf_order[i]
-    burnin_i <- min(cf_order, burnin)
+    burnin_i <- burnin
+    if(cf_order > 2) burnin_i <- cf_order
     
     #      _                 _       _
     #  ___(_)_ __ ___  _   _| | __ _| |_ ___
@@ -253,6 +253,7 @@ simulate_from_df <- function(
     )
     crossfit_time_i <- Sys.time()
     
+    # Store nuisance MSE
     sim_df$crossfit_outcome_marginal_mse[i] = with(
       nuisance_tbl,
       mean((outcome - .pred_outcome_marginal)^2)
@@ -337,5 +338,3 @@ simulate_from_df <- function(
   sim_df
 }
 
-# s0 <- simulate_seed(0)
-# gc()
