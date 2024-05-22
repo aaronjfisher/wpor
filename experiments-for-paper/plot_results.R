@@ -1,7 +1,7 @@
 library(tidyverse)
 library(latex2exp)
 
-job_path <- '2024-05-01_600'
+job_path <- '2024-05-22_600'
 
 slurm_dir <- paste0('_rslurm_', gsub('-','', job_path),'/')
 results <- readRDS(paste0(slurm_dir, 'combined_results.rds'))
