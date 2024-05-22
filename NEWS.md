@@ -2,6 +2,13 @@ NEWS.md
 =====
 
 
+### 0.0.5
+
+Use group-cv to ensure that, when tuning the effect_wf, if multiple pseudo-outcomes are estimated for a single individual then those pseudo-outcomes should always be assigned to the same split. This can only happen in multi-way cross-fitting. (https://github.com/aaronjfisher/wpor/pull/11)
+
+### 0.0.4
+
+Make some nuisance workflows optional, so computations can be faster when users do not want to compute multiple CATE estimators (https://github.com/aaronjfisher/wpor/pull/9).
 
 ### 0.0.3
 
