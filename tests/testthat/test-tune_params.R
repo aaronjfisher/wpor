@@ -14,8 +14,8 @@ train <- cbind(y, data.frame(x), active) %>%
   mutate(
     w_active = parsnip::importance_weights(active),
     w_nonactive = parsnip::importance_weights(1 - active)
-  )
-tibble()
+  ) %>%
+  tibble()
 # ggplot(train, aes(x = rowSums(x),y=y, col = as.factor(active))) + geom_point()
 
 x_terms <- train %>%
@@ -57,13 +57,13 @@ test_that("weights are used in tune_params for lasso, but not in standard tune::
     resamples = rs,
     grid = 10
   ) %>%
-    select_best("rmse"))$penalty
+    select_best(metric = "rmse"))$penalty
   standard_nonactive_penalty <- (tune_grid(
     wf_nonactive,
     resamples = rs,
     grid = 10
   ) %>%
-    select_best("rmse"))$penalty
+    select_best(metric = "rmse"))$penalty
   expect_false(standard_active_penalty * 10 < standard_nonactive_penalty)
 })
 

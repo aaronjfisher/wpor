@@ -88,9 +88,12 @@ fit_on_folds <- function(
 }
 
 check_dat <- function(data) {
-  stopifnot(!any(c(".weights", "pseudo", ".row") %in% names(data)))
-  data <- mutate(data, .row = 1:nrow(data)) %>%
-    relocate(.row, .before = everything())
+  stopifnot(!any(c(".weights", "pseudo") %in% names(data)))
+  if (is.null(data$.row)) {
+    data <- mutate(data, .row = 1:nrow(data)) %>%
+      relocate(.row, .before = everything())
+  }
+  stopifnot(data$.row == 1:nrow(data))
   data
 }
 
@@ -375,7 +378,7 @@ fit_wpor <- function(data,
   ) %>%
     select(-outcome, -treatment)
   check_wf(effect_wf, dat_effect, lhs_is = "pseudo", rhs_lacks = c("outcome", "treatment"))
-  
+
   fitted <- effect_wf %>%
     add_weights_column(".weights") %>%
     fit(dat_effect)

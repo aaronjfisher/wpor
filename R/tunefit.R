@@ -48,6 +48,7 @@ tune_params <- function(
       resamples <- rsample::group_vfold_cv(data, v = v, group = group)
     }
   }
+  if (is.null(data)) data <- resamples$splits[[1]]$data
   stopifnot(all(data == resamples$splits[[1]]$data))
   if (is.null(burnin)) burnin <- length(resamples$splits)
   v_updated <- length(resamples$splits)
