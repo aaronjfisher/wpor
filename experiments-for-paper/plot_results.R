@@ -1,11 +1,31 @@
 library(tidyverse)
 library(latex2exp)
 
-job_path <- '2024-05-22_600'
-
+job_path <- '2024-05-23_600'
 slurm_dir <- paste0('_rslurm_', gsub('-','', job_path),'/')
-results <- readRDS(paste0(slurm_dir, 'combined_results.rds'))
+
+#### Combine & re-save results
+sum(grepl('.RDS', dir(slurm_dir))) - 3 # number of completed jobs
+sjob <- readRDS(paste0(slurm_dir, 'sjob.rds'))
+job_out <- rslurm::get_slurm_out(sjob, "raw", wait = FALSE)
+results <- do.call(rbind, job_out)
+
+saveRDS(results, paste0(slurm_dir, 'combined_results.rds'))
+####
+
+#results <- readRDS(paste0(slurm_dir, 'combined_results.rds'))
 str(readRDS(paste0(slurm_dir, 'more_args.RDS')))
+
+n_errors <- sum(is.na(results$setup))
+if(n_errors>0){
+  x_list <- readRDS(paste0(slurm_dir, 'x.RDS'))
+  bad_x <- x_list[which(is.na(results$setup))] %>%
+    do.call(rbind, .)
+  stopifnot(all(bad_x$learners == 'cvboost'))
+  warning(n_errors, ' jobs using cvboost produced errors')
+    # cvboost seems to cause errors, perhaps due to memory issues?
+    # the results reported in the paper instead use lightgbm.
+}
 
 sum_results <- results %>%
   filter(!is.na(setup)) %>%
@@ -32,10 +52,8 @@ sum_results <- results %>%
     n_obs = as.numeric(n_obs)
     )
 
-tidyr::unnest(results, mse) %>%
-  filter(learners == 'lightgbm', weights != 'weight_1') %>% 
-  as.data.frame %>% 
-  filter(pred_mse > 5)
+
+
 
 my_learner = 'lightgbm'
 #my_learner = 'parsnip_random_forest'
@@ -292,3 +310,12 @@ sum_results %>%
   facet_grid(pseudo~setup)
 dev.off()
 
+
+
+## Workspace
+
+filter(results, learners == 'lightgbm') %>%
+  tidyr::unnest(mse) %>%
+  filter(weights != 'weight_1') %>% 
+  as.data.frame %>% 
+  filter(pred_mse > 5)

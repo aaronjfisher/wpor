@@ -143,10 +143,3 @@ system(paste(
   '--format jobid%15,AveVMSize,MaxVMsize,ReqCPUS,AllocCPUS,ReqMem,state,Elapsed --units=G '
 ))
 
-
-sum(grepl('.RDS', dir(slurm_dir))) - 3 # number of completed jobs
-# sjob <- readRDS(paste0(slurm_dir, 'sjob.rds'))
-job_out <- get_slurm_out(sjob, "raw", wait = FALSE)
-results <- do.call(rbind, job_out)
-
-saveRDS(results, paste0(slurm_dir, 'combined_results.rds'))
