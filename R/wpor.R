@@ -145,7 +145,7 @@ crossfit_nuisance <- function(
     min_prob = 0.01,
     v = 10,
     cf_order = 2,
-    verbose = getOption("verbose")) {
+    verbose = getOption("wpor.verbose", default = TRUE)) {
   stopifnot(is.factor(data$treatment))
   stopifnot(all(data$treatment %in% 0:1))
 
@@ -317,7 +317,7 @@ fit_wpor <- function(data,
                      ...,
                      pseudo_fun, weight_fun, effect_wf,
                      standardize_weights = FALSE,
-                     verbose = TRUE) {
+                     verbose = getOption("wpor.verbose", default = TRUE)) {
   data <- check_dat(data)
   if (is.null(nuisance_tbl)) {
     nuisance_tbl <- crossfit_nuisance(

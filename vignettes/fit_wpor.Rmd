@@ -25,7 +25,7 @@ library("wpor")
 library("dplyr")
 library("tidymodels")
 
-options("verbose" = TRUE)
+options("wpor.verbose" = TRUE)
 
 set.seed(0)
 p <- 6
@@ -144,9 +144,9 @@ mean((
 
 ## Tuning tidymodels workflows
 
-wpor also includes convenience functions for tuning hyperparameters. Parameters for nuisance models can either be pretuned, or specified be tuned at the time of fitting.
+wpor also includes convenience functions for tuning hyperparameters. Parameters for nuisance models can either be pretuned before running `fit_wpor`. Alternatively, users can specify instructions for how parameters should be tuned _at the time of fitting_ (e.g., within `fit_wpor`) by converting the associated workflow into an object of class `tunefit` (see example below). Parameters for the effect workflow can _only_ be specified as `tunefit` objects, since the pseudo-outcomes are not yet available before running `fit_wpor`.
 
-For more details on tuning parameters, see ?tune_params and ?as.tunefit.
+For more details on tuning parameters, see ?tune_params and ?as.tunefit. It is generally advisable to set the number of tuning parameters to check (`size`) to be >= 25, and the degree of cross-fold validation (`v`) to be >= 10. Here though, for illustative purposes, we use smaller values.
 
 ```{r}
 ### Pre-tuning workflows

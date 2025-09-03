@@ -28,7 +28,7 @@ tune_params <- function(
     burnin = NULL,
     seed = NULL,
     group = NULL,
-    verbose = getOption("verbose"),
+    verbose = getOption("wpor.verbose", default = TRUE),
     save_performance = FALSE,
     size = 10 # will be overwritten by grid
     ) {
@@ -67,7 +67,9 @@ tune_params <- function(
     grid <- trainer %>%
       hardhat::extract_parameter_set_dials() %>%
       dials::finalize(model.frame(form[-2], dat1)) %>%
-      dials::grid_latin_hypercube(size = size)
+      dials::grid_space_filling(size = size)
+  } else if (!is.null(size)) {
+    warning("`grid` is provided, so `size` argument will be ignored.")
   }
 
   stopifnot(is.data.frame(grid))
@@ -84,6 +86,19 @@ tune_params <- function(
     }
   }
 
+  if (verbose) {
+    if (burnin == v_updated){
+      printed_folds_string = paste0(v_updated, " folds, and ")
+    } else {
+      printed_folds_string = paste0(burnin, "-", v_updated, " folds (depending on tests after burn-in period), and ")
+    }
+    message(
+      "Tuning parameters using ",
+      printed_folds_string,
+      size,
+      " parameter sets."
+    )
+  }
   for (i in 1:v_updated) {
     ri <- rsample::get_rsplit(resamples, i)
     if (verbose) {
@@ -230,6 +245,9 @@ metric_neg_log_lik <- function(
 #' testthat::expect_equal(pred1, pred2)
 as.tunefit <- function(trainer, ...) {
   dots <- list(...)
+  if ("data" %in% names(dots)) {
+    warning("`data` should not be passed as an argument to `as.tunefit`. Rather, the training data should be specified at the time of fitting, via `fit.tunefit`")
+  }
   list(trainer = trainer, tune_args = dots) %>%
     add_class("tunefit")
 }
