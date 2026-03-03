@@ -12,6 +12,7 @@ NEWS.md
   * Removed unused xgboost_spec.R, which was conslidated into cvboost_spec.R but was accidentally left in the package.
   * Removed unused `get_params()` functions.
   * Explicit namespace prefixes added (e.g., `dplyr::`)
+  * Add use of `.data$` within dplyr functions to avoid R CMD check notes about undefined variables.
 
 ### 0.0.5
 
