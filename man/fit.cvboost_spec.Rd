@@ -4,7 +4,14 @@
 \alias{fit.cvboost_spec}
 \title{Fit a cvboost model based on a specification}
 \usage{
-\method{fit}{cvboost_spec}(object, data)
+\method{fit}{cvboost_spec}(object, data, ...)
+}
+\arguments{
+\item{object}{A cvboost_spec object.}
+
+\item{data}{A data frame containing the data to fit the model on.}
+
+\item{...}{Additional arguments passed to rlearner::cvboost.}
 }
 \description{
 Fit a cvboost model based on a specification

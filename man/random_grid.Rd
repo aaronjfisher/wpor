@@ -12,8 +12,12 @@ lightgbm_grid(size, marginal_len = 20, num_threads = 1)
 \arguments{
 \item{size}{number of rows for the grid.}
 
-\item{marginal_len}{the number of unique parameter values to draw from
+\item{...}{named arguments where each argument is a vector of possible values to use for generating
 for each dimension.}
+
+\item{marginal_len}{the number of unique parameter values to draw from}
+
+\item{num_threads}{number of threads to use for lightgbm training}
 }
 \value{
 a data.frame with rows that can be used with update.params(as.list(row)).

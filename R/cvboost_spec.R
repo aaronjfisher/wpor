@@ -12,7 +12,10 @@ rm_class <- function(obj, class_name) {
 }
 
 #' Define a cvboost model specification
-#' @param process_x_mat a function to be applied to
+#' @param formula A formula object specifying the model to be fit.
+#' @param mode A character string specifying the mode of the model, either "regression" or "classification".
+#' @param control A list of control parameters to be passed to the cvboost function.
+#' @param weights_column A character string specifying the name of the column in the data frame that contains observation weights.
 #' the result of model.matrix
 #' @export
 cvboost_spec <- function(formula, mode, control = NULL, weights_column = NULL) {
@@ -27,8 +30,11 @@ cvboost_spec <- function(formula, mode, control = NULL, weights_column = NULL) {
 
 
 #' Fit a cvboost model based on a specification
+#' @param object A cvboost_spec object.
+#' @param data A data frame containing the data to fit the model on.
+#' @param ... Additional arguments passed to rlearner::cvboost.
 #' @export
-fit.cvboost_spec <- function(object, data) {
+fit.cvboost_spec <- function(object, data, ...) {
   w <- get_weights(object, data)
   fitted <- do.call(rlearner::cvboost, c(
     list(
@@ -38,7 +44,8 @@ fit.cvboost_spec <- function(object, data) {
       objective = switch(object$mode,
         regression = "reg:squarederror",
         classification = "binary:logistic"
-      )
+      ),
+      ...
     ),
     object$control
   ))
@@ -54,16 +61,26 @@ fit.cvboost_spec <- function(object, data) {
 }
 
 #' Predict cvboost results on new data
+#' @param object A fitted cvboost_fit object.
+#' @param new_data A data frame containing the new data on which to make predictions.
+#' @param ... Additional arguments passed to stats::predict.
 #' @export
-predict.cvboost_fit <- function(object, new_data) {
+#' @importFrom stats predict
+predict.cvboost_fit <- function(object, new_data, ...) {
   newx_mat <- get_x(object$spec, new_data)
-  predict(
-    object = object$fitted, newx = newx_mat
+  stats::predict(
+    object = object$fitted, newx = newx_mat, ...
   )
 }
 
 
 #' Define a boosting specification, tuned by cross-validation
+#' 
+#' Either data or fit_init must be provided.
+#' 
+#' @param data A data frame containing the data to fit the initial cvboost model on.
+#' @param fit_init An initial cvboost fit object, if already available.
+#' @param ... Additional arguments passed to cvboost_spec.
 #' @export
 tuned_boost_spec <- function(data = NULL, fit_init = NULL, ...) {
   init_spec <- cvboost_spec(...)
@@ -81,8 +98,11 @@ tuned_boost_spec <- function(data = NULL, fit_init = NULL, ...) {
 }
 
 #' Fit a tuned, boosting specification
+#' @param object A tuned_boost_spec object.
+#' @param data A data frame containing the data to fit the model on.
+#' @param ... Additional arguments passed to xgboost::xgb.train.
 #' @export
-fit.tuned_boost_spec <- function(object, data) {
+fit.tuned_boost_spec <- function(object, data, ...) {
   w <- get_weights(object, data)
   DMatrix <- xgboost::xgb.DMatrix(
     data = get_x(object, data),
@@ -93,7 +113,8 @@ fit.tuned_boost_spec <- function(object, data) {
     data = DMatrix,
     params = object$param,
     nrounds = object$nrounds,
-    nthread = 1
+    nthread = 1,
+    ...
   )
   list(
     fitted = xgb_model,
@@ -103,9 +124,10 @@ fit.tuned_boost_spec <- function(object, data) {
 }
 
 #' @export
-predict.tuned_boost_fit <- function(object, new_data) {
-  predict(
+predict.tuned_boost_fit <- function(object, new_data, ...) {
+  stats::predict(
     object$fitted,
-    newdata = get_x(object$spec, new_data)
+    newdata = get_x(object$spec, new_data),
+    ...
   )
 }

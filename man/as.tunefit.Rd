@@ -17,30 +17,41 @@ tune_params(
   burnin = NULL,
   seed = NULL,
   group = NULL,
-  verbose = getOption("verbose"),
+  verbose = getOption("wpor.verbose", default = TRUE),
   save_performance = FALSE,
   size = 10
 )
 
 as.tunefit(trainer, ...)
 
-\method{fit}{tunefit}(object, data)
+\method{fit}{tunefit}(object, data, ...)
 }
 \arguments{
-\item{trainer}{a parsnip workflow or model specification that can be tuned.}
+\item{trainer}{a workflow or model specification that can be tuned.}
 
 \item{data}{a dataset to train on}
+
+\item{grid}{a data frame of parameter sets to evaluate. If NULL, a grid will be generated.}
+
+\item{metric}{a function that takes arguments pred, truth, and weights and
+returns a numeric value to be minimized. If NULL, defaults to metric_neg_log_lik for classification tasks and metric_mse for regression tasks.}
 
 \item{v}{number of cv folds to use in resamples; overwritten by resamples, if provided.}
 
 \item{resamples}{An ‘rset()’ object object used to evaluate wf. Defaults to rsample::vfold_cv(data, v).}
 
-\item{burnin}{how many folds to examine before discarding
-poorly performing parameter sets. Defaults to length(resamples$splits).}
+\item{alpha}{significance level for t-tests to discard poorly performing parameter sets. Defaults to 0.05.}
+
+\item{burnin}{how many folds to examine before discarding}
 
 \item{seed}{if specified, temporarily changes the seed to ensure
 reproducibility when computing resamples. The original seed of the calling
 environment is restored before the tune_params function completes.}
+
+\item{group}{if specified, the name of a column in data that contains group identifiers for group-wise cross-validation. If NULL, standard cross-validation is used.
+poorly performing parameter sets. Defaults to length(resamples$splits).}
+
+\item{verbose}{whether to print progress messages to the console.}
 
 \item{save_performance}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} save performance
 metrics as an attribute. If using as.tunefit, this attribute
@@ -49,6 +60,8 @@ will also be saved in the final, fitted workflow.}
 \item{size}{number of param sets to evaluate}
 
 \item{...}{args to be passed to tune_params (e.g., v, grid) before fitting the workflow.}
+
+\item{object}{a tunefit object created by as.tunefit.}
 }
 \value{
 a trainer or workflow with parameters updated to be the
@@ -99,7 +112,8 @@ if (FALSE) {
 }
 
 ## Example using tune_params explicitly
-tuned_wf <- tune_params(wf, data = training$data, size = 2, seed = 0) # setting size artificially small for example
+# setting size artificially small for example
+tuned_wf <- tune_params(wf, data = training$data, size = 2, seed = 0) 
 fitted1 <- fit(tuned_wf, training$data)
 pred1 <- predict(fitted1, training$data, "prob")
 

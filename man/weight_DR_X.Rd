@@ -21,6 +21,11 @@ weight_U_AX(treatment, .pred_treatment)
 
 weight_1(.pred_treatment)
 }
+\arguments{
+\item{.pred_treatment, .pred_control}{Vectors of predicted probabilities of treatment and control assignment.}
+
+\item{treatment}{Vector of treatment assignments (1 for treatment, 0 for control).}
+}
 \description{
 Weighting functions
 }

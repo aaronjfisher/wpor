@@ -6,6 +6,11 @@
 \usage{
 t_learner(data, outcome_0_wf, outcome_1_wf = outcome_0_wf)
 }
+\arguments{
+\item{data}{A data frame containing the data to fit the t-learner on.}
+
+\item{outcome_0_wf, outcome_1_wf}{Workflows for the outcome models under control and treatment, respectively.}
+}
 \description{
 Fit a two-model-learner (t-learner)
 }

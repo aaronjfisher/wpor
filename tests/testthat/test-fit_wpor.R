@@ -1,7 +1,7 @@
 library("dplyr")
 library("tidymodels")
 
-options("verbose" = TRUE)
+options("wpor.verbose" = TRUE)
 
 set.seed(0)
 p <- 6

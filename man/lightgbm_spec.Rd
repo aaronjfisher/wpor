@@ -10,7 +10,26 @@ lightgbm_spec(formula, mode, params = list(), weights_column = NULL)
 
 \method{fit}{lightgbm_spec}(object, data, verbose = -1, ...)
 
-\method{predict}{lightgbm_fit}(object, new_data)
+\method{predict}{lightgbm_fit}(object, new_data, ...)
+}
+\arguments{
+\item{formula}{A formula specifying the outcome and predictors for the model.}
+
+\item{mode}{A character string specifying the mode of the model, either "regression" or "classification".}
+
+\item{params}{A named list of parameters to be passed to the lightgbm training function.}
+
+\item{weights_column}{An optional string specifying the name of a column in the training data frame containing observation weights.}
+
+\item{object}{a fitted lightgbm_fit object.}
+
+\item{data}{a data frame containing the training data.}
+
+\item{verbose}{verbosity level for lightgbm training.}
+
+\item{...}{additional arguments passed to the predict method of the lightgbm model.}
+
+\item{new_data}{a data frame containing the new data for which to generate predictions.}
 }
 \description{
 Define a lightgbm model specification

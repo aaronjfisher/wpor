@@ -1,10 +1,17 @@
 #' Simulate data based on Nie & Wager, 2018.
 #' See https://github.com/xnie/rlearner/blob/6806396960e672214e2ef36e16c76bbb58ef9114/experiments_for_paper/run_simu.R
+#' @param setup Character string indicating the simulation setup to use. Options are "A", "B", "C", "D", "E", "F", or "G".
+#' @param n Integer indicating the number of observations to simulate.
+#' @param p Integer indicating the number of covariates to simulate.
+#' @param sigma Numeric indicating the standard deviation of the noise term to add to the outcome.
+#' @importFrom dplyr %>%
+#' @importFrom stats rbinom runif rnorm
 #' @export
 sim_data <- function(setup, n, p, sigma) {
   stopifnot(p >= 5 | setup %in% c("E", "F"))
   if (setup == "A") {
     get.params <- function() {
+      stopifnot(p >= 5)
       X <- matrix(runif(n * p, min = 0, max = 1), n, p)
       b <- sin(pi * X[, 1] * X[, 2]) + 2 * (X[, 3] - 0.5)^2 + X[, 4] + 0.5 * X[, 5]
       eta <- 0.1
@@ -14,6 +21,7 @@ sim_data <- function(setup, n, p, sigma) {
     }
   } else if (setup == "B") {
     get.params <- function() {
+      stopifnot(p >= 5)
       X <- matrix(rnorm(n * p), n, p)
       b <- pmax(0, X[, 1] + X[, 2], X[, 3]) + pmax(0, X[, 4] + X[, 5])
       e <- rep(0.5, n)
@@ -22,6 +30,7 @@ sim_data <- function(setup, n, p, sigma) {
     }
   } else if (setup == "C") {
     get.params <- function() {
+      stopifnot(p >= 3)
       X <- matrix(rnorm(n * p), n, p)
       b <- 2 * log(1 + exp(X[, 1] + X[, 2] + X[, 3]))
       e <- 1 / (1 + exp(X[, 2] + X[, 3]))
@@ -30,6 +39,7 @@ sim_data <- function(setup, n, p, sigma) {
     }
   } else if (setup == "D") {
     get.params <- function() {
+      stopifnot(p >= 5)
       X <- matrix(rnorm(n * p), n, p)
       b <- (pmax(X[, 1] + X[, 2] + X[, 3], 0) + pmax(X[, 4] + X[, 5], 0)) / 2
       e <- 1 / (1 + exp(-X[, 1]) + exp(-X[, 2]))
@@ -102,9 +112,9 @@ sim_data <- function(setup, n, p, sigma) {
     data = train_data,
     params = params,
     formulas = list(
-      outcome = formula(paste("outcome ~", rhs)),
-      treatment = formula(paste("treatment ~", rhs)),
-      effect = formula(paste("pseudo ~", rhs))
+      outcome = stats::formula(paste("outcome ~", rhs)),
+      treatment = stats::formula(paste("treatment ~", rhs)),
+      effect = stats::formula(paste("pseudo ~", rhs))
     )
   )
 }

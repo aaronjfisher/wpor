@@ -1,4 +1,6 @@
 #' Weighting functions
+#' @param .pred_treatment,.pred_control Vectors of predicted probabilities of treatment and control assignment.
+#' @param treatment Vector of treatment assignments (1 for treatment, 0 for control).
 #' @export
 weight_DR_X <- function(.pred_treatment, .pred_control) {
   .pred_treatment * .pred_control

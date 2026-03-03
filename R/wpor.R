@@ -2,15 +2,16 @@
 #' @param wf a tidymodels workflow.
 #' @param rset a collection (i.e., "set") of resamples.
 #' E.g., for propenisty models, the output of vfold_cv
+#' @importFrom dplyr %>%
 crossfit <- function(wf, rset) {
   wf %>%
     tune::fit_resamples(
       rset,
-      control = control_resamples(save_pred = TRUE)
+      control = tune::control_resamples(save_pred = TRUE)
     ) %>%
-    collect_predictions(summarize = FALSE) %>%
+    tune::collect_predictions(summarize = FALSE) %>%
     arrange(.row) %>%
-    rename(.fold_id = id)
+    rename(.fold_id = .data$id)
 }
 
 
@@ -30,13 +31,14 @@ crossfit <- function(wf, rset) {
 #' This is helpful, for example,
 #' for fitting a model only on treated patients, but obtaining
 #' predictions on all patients.
-#' @param ... see `filter_analysis`.
 #'
 #' This function is based on tune::fit_resamples, but it is not a generic.
 #' Thus, for custom fitting procedures that are not workflows,
 #' the user still needs to ensure that a fit method exists,
 #' but does not need to ensure that a fit_resamples method exists.
 #' This version relies only on the `fit` method of the workflow.
+#' @importFrom dplyr %>% mutate select rename arrange relocate everything all_of
+#' @importFrom rsample analysis assessment
 fit_on_folds <- function(
     object, rset,
     do_1 = FALSE, do_0 = FALSE,
@@ -80,11 +82,11 @@ fit_on_folds <- function(
         )
       }
     )) %>%
-    select(-splits) %>%
-    rename(.fold_id = id) %>%
-    tidyr::unnest(predictions) %>%
-    arrange(.row, .fold_id) %>%
-    relocate(.row, .before = everything())
+    select(-all_of(c("splits"))) %>%
+    rename(.fold_id = .data$id) %>%
+    tidyr::unnest("predictions") %>%
+    arrange(".row", ".fold_id") %>%
+    relocate(".row", .before = everything())
 }
 
 check_dat <- function(data) {
@@ -135,6 +137,8 @@ check_wf <- function(
 #' @param verbose whether to print progress.
 #' @returns a tibble of nuisance predictions. If cf_order is >2, there will be more than 1 prediction per row of `data`. The tibble contains: `.row`, the row index of `data`; `.fold_id`, the fold used to train the predictions; `.pred_treatment`, the predicted probability of treatment; `.pred_control`, the predicted probability of control (equal to 1-.pred_treatment if cf_order <= 3); `.pred_outcome_0_separate` the predicted outcome under treatment == 0, `.pred_outcome_1_separate` the predicted outcome under treatment == 1; `.pred_outcome_marginal` the predicted outcome under the observed treatment, i.e., marginalizing over treatment.
 #' @export
+#' @importFrom dplyr %>% mutate select rename arrange filter join_by left_join
+#' @importFrom rlang .data
 crossfit_nuisance <- function(
     data,
     treatment_wf,
@@ -176,7 +180,7 @@ crossfit_nuisance <- function(
 
 
   if (cf_order == 2) {
-    folds <- vfold_cv(data, v) # contains full data
+    folds <- rsample::vfold_cv(data, v) # contains full data
   }
   if (cf_order %in% c(3, 4)) {
     folds <- multiway_cf_folds(data, cf_order)
@@ -187,25 +191,25 @@ crossfit_nuisance <- function(
   # lobstr::obj_size(data)
   if (verbose) message("Cross fitting treatment model")
   E_treatment_tbl <- fit_on_folds(treatment_wf, folds) %>%
-    mutate(.pred_treatment = ptrim(.pred, min_prob, 1 - min_prob)) %>%
-    select(.row, .fold_id, .pred_treatment)
+    mutate(.pred_treatment = ptrim(.data$.pred, min_prob, 1 - min_prob)) %>%
+    select(".row", ".fold_id", ".pred_treatment")
 
   if (verbose) message("Cross fitting outcome model")
   E_outcome_marginal <- fit_on_folds(outcome_marginal_wf, folds) %>%
-    rename(.pred_outcome_marginal = .pred) %>%
-    select(.row, .fold_id, .pred_outcome_marginal)
+    rename(.pred_outcome_marginal = .data$.pred) %>%
+    select(".row", ".fold_id", ".pred_outcome_marginal")
   E_outcome_1_separate_tbl <- fit_on_folds(outcome_1_separate_wf,
     folds,
-    analysis_rows = filter(data, treatment == 1)$.row
+    analysis_rows = filter(data, .data$treatment == 1)$.row
   ) %>%
-    rename(.pred_outcome_1_separate = .pred) %>%
-    select(.row, .fold_id, .pred_outcome_1_separate)
+    rename(.pred_outcome_1_separate = .data$.pred) %>%
+    select(".row", ".fold_id", ".pred_outcome_1_separate")
   E_outcome_0_separate_tbl <- fit_on_folds(outcome_0_separate_wf,
     folds,
-    analysis_rows = filter(data, treatment == 0)$.row
+    analysis_rows = filter(data, .data$treatment == 0)$.row
   ) %>%
-    rename(.pred_outcome_0_separate = .pred) %>%
-    select(.row, .fold_id, .pred_outcome_0_separate)
+    rename(.pred_outcome_0_separate = .data$.pred) %>%
+    select(".row", ".fold_id", ".pred_outcome_0_separate")
 
   E_outcome_single_tbl <- fit_on_folds(
     outcome_single_wf,
@@ -213,13 +217,13 @@ crossfit_nuisance <- function(
     do_1 = TRUE, do_0 = TRUE
   ) %>%
     rename(
-      .pred_outcome_0_single = .pred_0,
-      .pred_outcome_1_single = .pred_1
+      .pred_outcome_0_single = .data$.pred_0,
+      .pred_outcome_1_single = .data$.pred_1
     ) %>%
     select(
-      .row, .fold_id,
-      .pred_outcome_0_single,
-      .pred_outcome_1_single
+      ".row", ".fold_id",
+      ".pred_outcome_0_single",
+      ".pred_outcome_1_single"
     )
 
   if (verbose) message("Reshaping nuisance predictions")
@@ -227,10 +231,10 @@ crossfit_nuisance <- function(
     merge(E_outcome_marginal) %>%
     merge(E_treatment_tbl) %>%
     merge(E_outcome_single_tbl) %>%
-    tibble() %>%
-    arrange(.row, .fold_id) %>%
-    nest(.by = .row) %>%
-    rename(.pred = data)
+    tibble::tibble() %>%
+    arrange(".row", ".fold_id") %>%
+    tidyr::nest(.by = ".row") %>%
+    rename(.pred = .data$data)
 
   # For any given training observation, we will have
   # (cf_order-1) nuisance model predictions, each from
@@ -246,7 +250,7 @@ crossfit_nuisance <- function(
     pred_df2 <- pred_df
     pred_df2$.pred <- lapply(pred_df$.pred, \(p){
       stopifnot(length(p$.fold_id) == 1)
-      mutate(p, .pred_control = 1 - .pred_treatment)
+      mutate(p, .pred_control = 1 - .data$.pred_treatment)
     })
   }
   if (cf_order == 3) {
@@ -254,7 +258,7 @@ crossfit_nuisance <- function(
     pred_df2$.pred <- lapply(pred_df$.pred, \(p){
       stopifnot(length(p$.fold_id) == 2)
       eg <- expand.grid(1:2, 1:2) %>%
-        filter(Var1 != Var2)
+        filter(.data$Var1 != .data$Var2)
       apply(eg, 1, \(inds)
       data.frame(
         .fold_id = gsub("Fold", "", paste(p$.fold_id[inds], collapse = "x")),
@@ -274,7 +278,7 @@ crossfit_nuisance <- function(
     pred_df2$.pred <- lapply(pred_df$.pred, \(p){
       stopifnot(length(p$.fold_id) == 3)
       eg <- expand.grid(1:3, 1:3, 1:3) %>%
-        filter(Var1 != Var2, Var1 != Var3, Var2 != Var3)
+        filter(.data$Var1 != .data$Var2, .data$Var1 != .data$Var3, .data$Var2 != .data$Var3)
       apply(eg, 1, \(inds)
       data.frame(
         .fold_id = gsub("Fold", "", paste(p$.fold_id[inds], collapse = "x")),
@@ -291,9 +295,9 @@ crossfit_nuisance <- function(
   }
 
   nuisance_tbl <- data %>%
-    select(.row, outcome, treatment) %>%
-    left_join(pred_df2, by = join_by(.row)) %>%
-    tidyr::unnest(.pred)
+    select(".row", "outcome", "treatment") %>%
+    left_join(pred_df2, by = join_by(".row")) %>%
+    tidyr::unnest(".pred")
 
   nuisance_tbl
 }
@@ -308,8 +312,12 @@ crossfit_nuisance <- function(
 #' @param effect_wf A workflow for fitting the final effect (pseudo-outcome) model.
 #' This workflow should expect the pseudo-outcome to be stored in
 #' a data column labeled "pseudo".
+#' @param standardize_weights whether to standardize the weights to have mean 1.
+#' @param verbose whether to print progress messages.
 #' @returns a fitted model; the output of `workflows:::fit.workflow`
 #' @rdname crossfit_nuisance
+#' @importFrom methods formalArgs
+#' @importFrom dplyr %>% select left_join
 #' @export
 fit_wpor <- function(data,
                      nuisance_tbl = NULL,
@@ -376,7 +384,7 @@ fit_wpor <- function(data,
     data,
     by = join_by(.row)
   ) %>%
-    select(-outcome, -treatment)
+    select(-all_of(c("outcome", "treatment")))
   check_wf(effect_wf, dat_effect, lhs_is = "pseudo", rhs_lacks = c("outcome", "treatment"))
 
   fitted <- effect_wf %>%
@@ -388,6 +396,9 @@ fit_wpor <- function(data,
 }
 
 #' Higher order cross-fitting instructions with inverted train/test proportions.
+#' @param data a data.frame or tibble
+#' @param v the number of folds to create.
+#' @return a rsample rset object with v splits.
 #' @export
 multiway_cf_folds <- function(data, v) {
   new_splits <- list()
@@ -395,7 +406,7 @@ multiway_cf_folds <- function(data, v) {
   cut_ind <- as.numeric(cut(1:nrow(data), breaks = v))
   analysis_list <- lapply(1:v, \(ind) shuffled[cut_ind == ind])
   for (i in 1:v) {
-    new_splits[[i]] <- make_splits(
+    new_splits[[i]] <- rsample::make_splits(
       x = list(
         analysis = analysis_list[[i]],
         assessment = setdiff(1:nrow(data), analysis_list[[i]])
@@ -403,7 +414,7 @@ multiway_cf_folds <- function(data, v) {
       data = data
     )
   }
-  out <- manual_rset(new_splits, paste0("Fold", 1:v))
+  out <- rsample::manual_rset(new_splits, paste0("Fold", 1:v))
   assert_shared_data_address(out)
   out
 }
