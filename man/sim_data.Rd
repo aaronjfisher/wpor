@@ -7,6 +7,15 @@ See https://github.com/xnie/rlearner/blob/6806396960e672214e2ef36e16c76bbb58ef91
 \usage{
 sim_data(setup, n, p, sigma)
 }
+\arguments{
+\item{setup}{Character string indicating the simulation setup to use. Options are "A", "B", "C", "D", "E", "F", or "G".}
+
+\item{n}{Integer indicating the number of observations to simulate.}
+
+\item{p}{Integer indicating the number of covariates to simulate.}
+
+\item{sigma}{Numeric indicating the standard deviation of the noise term to add to the outcome.}
+}
 \description{
 Simulate data based on Nie & Wager, 2018.
 See https://github.com/xnie/rlearner/blob/6806396960e672214e2ef36e16c76bbb58ef9114/experiments_for_paper/run_simu.R

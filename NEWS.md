@@ -1,6 +1,18 @@
 NEWS.md
 =====
 
+### 0.0.6
+
+* (**Breaking**) Replace `getOption("verbose")` with `getOption("wpor.verbose")` to avoid overlap with other packages. Users should now set `options(wpor.verbose = TRUE)` to enable verbose output.
+* Replacing internal use of `dials::grid_latin_hypercube` with `dials::grid_space_filling`, as the former is deprecated.
+* Adding LICENSE files, updating DESCRIPTION file.
+* Many changes to documentation and internal code to prepare for CRAN submission, including:
+  * Updating S3 methods expanded to include `...` argument.
+  * Adding @param documentation for all arguments.
+  * Removed unused xgboost_spec.R, which was conslidated into cvboost_spec.R but was accidentally left in the package.
+  * Removed unused `get_params()` functions.
+  * Explicit namespace prefixes added (e.g., `dplyr::`)
+  * Add use of `.data$` within dplyr functions to avoid R CMD check notes about undefined variables.
 
 ### 0.0.5
 

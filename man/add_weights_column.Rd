@@ -2,9 +2,28 @@
 % Please edit documentation in R/add_weights_column.R
 \name{add_weights_column}
 \alias{add_weights_column}
+\alias{add_weights_column.lightgbm_spec}
+\alias{add_weights_column.cvboost_spec}
+\alias{add_weights_column.workflow}
+\alias{add_weights_column.tunefit}
 \title{Specify a column name to use for weights}
 \usage{
-add_weights_column(object, ...)
+add_weights_column(object, column, ...)
+
+\method{add_weights_column}{lightgbm_spec}(object, column, ...)
+
+\method{add_weights_column}{cvboost_spec}(object, column, ...)
+
+\method{add_weights_column}{workflow}(object, column, ...)
+
+\method{add_weights_column}{tunefit}(object, column, ...)
+}
+\arguments{
+\item{object}{A model specification or workflow object.}
+
+\item{column}{A character string indicating the name of the column to use for weights.}
+
+\item{...}{Placeholder for generic arguments.}
 }
 \description{
 Specify a column name to use for weights

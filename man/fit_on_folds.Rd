@@ -24,9 +24,7 @@ for the assessment fold, in which treatment is set to 0.}
 \item{analysis_rows}{a subset of .row values to use for training.
 This is helpful, for example,
 for fitting a model only on treated patients, but obtaining
-predictions on all patients.}
-
-\item{...}{see \code{filter_analysis}.
+predictions on all patients.
 
 This function is based on tune::fit_resamples, but it is not a generic.
 Thus, for custom fitting procedures that are not workflows,

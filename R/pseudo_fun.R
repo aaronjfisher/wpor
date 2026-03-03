@@ -1,4 +1,10 @@
 #' Pseudo outcome functions
+#' @param outcome The observed outcome variable.
+#' @param treatment The observed treatment variable (binary).
+#' @param .pred_outcome_1_single,.pred_outcome_0_single Predicted potential outcomes under treatment and control, from single/joint model.
+#' @param .pred_outcome_1_separate,.pred_outcome_0_separate Predicted potential outcomes under treatment and control, from separate models.
+#' @param .pred_outcome_marginal Predicted marginal outcome, marginalizing over treatment assignment.
+#' @param .pred_treatment,.pred_control Predicted probabilities of treatment and control assignment.
 #' @export
 pseudo_DR_single <- function(outcome,
                              treatment,

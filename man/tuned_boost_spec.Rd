@@ -8,8 +8,13 @@ tuned_boost_spec(data = NULL, fit_init = NULL, ...)
 
 tuned_boost_spec(data = NULL, fit_init = NULL, ...)
 }
-\description{
-Define a boosting specification, tuned by cross-validation
+\arguments{
+\item{data}{A data frame containing the data to fit the initial cvboost model on.}
 
-Define a boosting specification, tuned by cross-validation
+\item{fit_init}{An initial cvboost fit object, if already available.}
+
+\item{...}{Additional arguments passed to cvboost_spec.}
+}
+\description{
+Either data or fit_init must be provided.
 }

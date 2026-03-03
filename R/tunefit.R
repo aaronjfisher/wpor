@@ -2,14 +2,20 @@
 #'
 #' @param trainer a parsnip workflow or model specification that can be tuned.
 #' @param data a dataset to train on
+#' @param grid a data frame of parameter sets to evaluate. If NULL, a grid will be generated.
+#' @param metric a function that takes arguments pred, truth, and weights and 
+#' returns a numeric value to be minimized. If NULL, defaults to metric_neg_log_lik for classification tasks and metric_mse for regression tasks.
 #' @param v number of cv folds to use in resamples; overwritten by resamples, if provided.
 #' @param size number of param sets to evaluate
 #' @param resamples An ‘rset()’ object object used to evaluate wf. Defaults to rsample::vfold_cv(data, v).
 #' @param burnin how many folds to examine before discarding
+#' @param alpha significance level for t-tests to discard poorly performing parameter sets. Defaults to 0.05.
+#' @param group if specified, the name of a column in data that contains group identifiers for group-wise cross-validation. If NULL, standard cross-validation is used.
 #' poorly performing parameter sets. Defaults to length(resamples$splits).
 #' @param seed if specified, temporarily changes the seed to ensure
 #' reproducibility when computing resamples. The original seed of the calling
 #' environment is restored before the tune_params function completes.
+#' @param verbose whether to print progress messages to the console.
 #' @param save_performance `r lifecycle::badge('experimental')` save performance
 #' metrics as an attribute. If using as.tunefit, this attribute
 #' will also be saved in the final, fitted workflow.
@@ -28,7 +34,7 @@ tune_params <- function(
     burnin = NULL,
     seed = NULL,
     group = NULL,
-    verbose = getOption("verbose"),
+    verbose = getOption("wpor.verbose", default = TRUE),
     save_performance = FALSE,
     size = 10 # will be overwritten by grid
     ) {
@@ -62,12 +68,14 @@ tune_params <- function(
     if (!"workflow" %in% class(trainer)) {
       stop("if trainer is not a workflow, a grid must be explicitly specified.")
     }
-    form <- extract_preprocessor(trainer)
+    form <- workflows::extract_preprocessor(trainer)
     stopifnot(class(form) == "formula")
     grid <- trainer %>%
       hardhat::extract_parameter_set_dials() %>%
-      dials::finalize(model.frame(form[-2], dat1)) %>%
-      dials::grid_latin_hypercube(size = size)
+      dials::finalize(stats::model.frame(form[-2], dat1)) %>%
+      dials::grid_space_filling(size = size)
+  } else if (!is.null(size)) {
+    warning("`grid` is provided, so `size` argument will be ignored.")
   }
 
   stopifnot(is.data.frame(grid))
@@ -84,6 +92,19 @@ tune_params <- function(
     }
   }
 
+  if (verbose) {
+    if (burnin == v_updated){
+      printed_folds_string = paste0(v_updated, " folds, and ")
+    } else {
+      printed_folds_string = paste0(burnin, "-", v_updated, " folds (depending on tests after burn-in period), and ")
+    }
+    message(
+      "Tuning parameters using ",
+      printed_folds_string,
+      size,
+      " parameter sets."
+    )
+  }
   for (i in 1:v_updated) {
     ri <- rsample::get_rsplit(resamples, i)
     if (verbose) {
@@ -119,8 +140,8 @@ tune_params <- function(
     for (j in 1:size) {
       if (skip_ind[j]) next
       perf_j <- performance[1:i, j]
-      if (i >= burnin & min(var(perf_j), var(perf_best)) > 10^-5) {
-        skip_ind[j] <- t.test(perf_best, perf_j, alternative = "less")$p.value < alpha
+      if (i >= burnin & min(stats::var(perf_j), stats::var(perf_best)) > 10^-5) {
+        skip_ind[j] <- stats::t.test(perf_best, perf_j, alternative = "less")$p.value < alpha
       }
     }
     if (sum(!skip_ind) == 1) {
@@ -192,6 +213,7 @@ metric_neg_log_lik <- function(
 #' The as.tunefit class can also be used with custom training algorithms
 #' that are not workflows (see the "Fitting WPOR Models" vignette for an example).
 #'
+#' @param trainer a workflow or model specification that can be tuned.
 #' @param ... args to be passed to tune_params (e.g., v, grid) before fitting the workflow.
 #' @export
 #' @examples
@@ -218,7 +240,8 @@ metric_neg_log_lik <- function(
 #' }
 #'
 #' ## Example using tune_params explicitly
-#' tuned_wf <- tune_params(wf, data = training$data, size = 2, seed = 0) # setting size artificially small for example
+#' # setting size artificially small for example
+#' tuned_wf <- tune_params(wf, data = training$data, size = 2, seed = 0) 
 #' fitted1 <- fit(tuned_wf, training$data)
 #' pred1 <- predict(fitted1, training$data, "prob")
 #'
@@ -230,6 +253,9 @@ metric_neg_log_lik <- function(
 #' testthat::expect_equal(pred1, pred2)
 as.tunefit <- function(trainer, ...) {
   dots <- list(...)
+  if ("data" %in% names(dots)) {
+    warning("`data` should not be passed as an argument to `as.tunefit`. Rather, the training data should be specified at the time of fitting, via `fit.tunefit`")
+  }
   list(trainer = trainer, tune_args = dots) %>%
     add_class("tunefit")
 }
@@ -239,9 +265,10 @@ as.tunefit <- function(trainer, ...) {
 #'
 #' fit.tunefit returns a tuned, fitted workflow.
 #'
+#' @param object a tunefit object created by as.tunefit.
 #' @export
 #' @rdname  as.tunefit
-fit.tunefit <- function(object, data) {
+fit.tunefit <- function(object, data, ...) {
   tuned <- do.call(tune_params, c(
     list(
       trainer = object$trainer,
@@ -249,7 +276,7 @@ fit.tunefit <- function(object, data) {
     ),
     object$tune_args
   ))
-  fitted <- fit(tuned, data)
+  fitted <- fit(tuned, data, ...)
   attributes(fitted)$tune_results <- attributes(tuned)$tune_results
 
   return(fitted)

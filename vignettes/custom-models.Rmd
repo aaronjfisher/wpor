@@ -75,7 +75,7 @@ For models used in the pseudo-outcome regressions step, we require:
 
 * `add_weights_column(algorithm, column)`: specifies a column name of the training data that will be treated as a weight column.
 	* Example: `add_weights_column.workflow`
-* `get_weights_column(algorithm, column)`: extract the column of weights.
+* `get_weights_column(algorithm)`: extract the column of weights.
 	* Example: `get_weights_column.workflow`
 
 ```{r}

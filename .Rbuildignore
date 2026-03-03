@@ -1,3 +1,4 @@
-^doc$
-^Meta$
-experiments-for-paper/*
+^LICENSE\.md$
+^LICENSE$
+^before_comitting\.md$
+^experiments-for-paper$

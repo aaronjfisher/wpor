@@ -6,6 +6,14 @@
 \usage{
 multiway_cf_folds(data, v)
 }
+\arguments{
+\item{data}{a data.frame or tibble}
+
+\item{v}{the number of folds to create.}
+}
+\value{
+a rsample rset object with v splits.
+}
 \description{
 Higher order cross-fitting instructions with inverted train/test proportions.
 }

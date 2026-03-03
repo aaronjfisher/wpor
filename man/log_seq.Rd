@@ -7,6 +7,11 @@ log_seq is helpful function for creating random grids}
 \usage{
 log_seq(from, to, length)
 }
+\arguments{
+\item{from, to}{logs of these values are passed to seq to create a sequence that is evenly spaced on the log scale}
+
+\item{length}{the length of the sequence to generate, passed to seq as length.out.}
+}
 \description{
 Generate a sequence that is evenly spaced on the log scale
 log_seq is helpful function for creating random grids

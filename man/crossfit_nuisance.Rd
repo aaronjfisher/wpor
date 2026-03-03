@@ -15,7 +15,7 @@ crossfit_nuisance(
   min_prob = 0.01,
   v = 10,
   cf_order = 2,
-  verbose = getOption("verbose")
+  verbose = getOption("wpor.verbose", default = TRUE)
 )
 
 fit_wpor(
@@ -27,7 +27,7 @@ fit_wpor(
   weight_fun,
   effect_wf,
   standardize_weights = FALSE,
-  verbose = TRUE
+  verbose = getOption("wpor.verbose", default = TRUE)
 )
 }
 \arguments{
@@ -46,7 +46,7 @@ should include treatment as a covariate.}
 
 \item{cf_order}{either 2, 3, or 4.}
 
-\item{verbose}{whether to print progress.}
+\item{verbose}{whether to print progress messages.}
 
 \item{nuisance_tbl}{the output of crossfit_nuisance}
 
@@ -60,6 +60,8 @@ supplied.}
 \item{effect_wf}{A workflow for fitting the final effect (pseudo-outcome) model.
 This workflow should expect the pseudo-outcome to be stored in
 a data column labeled "pseudo".}
+
+\item{standardize_weights}{whether to standardize the weights to have mean 1.}
 }
 \value{
 a tibble of nuisance predictions. If cf_order is >2, there will be more than 1 prediction per row of \code{data}. The tibble contains: \code{.row}, the row index of \code{data}; \code{.fold_id}, the fold used to train the predictions; \code{.pred_treatment}, the predicted probability of treatment; \code{.pred_control}, the predicted probability of control (equal to 1-.pred_treatment if cf_order <= 3); \code{.pred_outcome_0_separate} the predicted outcome under treatment == 0, \code{.pred_outcome_1_separate} the predicted outcome under treatment == 1; \code{.pred_outcome_marginal} the predicted outcome under the observed treatment, i.e., marginalizing over treatment.
