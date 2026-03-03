@@ -5,6 +5,7 @@ NEWS.md
 
 * (**Breaking**) Replace `getOption("verbose")` with `getOption("wpor.verbose")` to avoid overlap with other packages. Users should now set `options(wpor.verbose = TRUE)` to enable verbose output.
 * Replacing internal use of `dials::grid_latin_hypercube` with `dials::grid_space_filling`, as the former is deprecated.
+* Adding LICENSE files, updating DESCRIPTION file.
 * Many changes to documentation and internal code to prepare for CRAN submission, including:
   * Updating S3 methods expanded to include `...` argument.
   * Adding @param documentation for all arguments.
