@@ -54,7 +54,8 @@ For cran, you should also run
 ```r
 # Compile package on windows via http://win-builder.r-project.org/
 # These functions email results to package maintainer email within ~30min
-# The functions will each check your email before continuing.
+# The functions will each check your email before continuing,
+# and must be run interactively.
 devtools::check_win_devel()
 devtools::check_win_release()
 ```
