@@ -52,7 +52,9 @@ R CMD check --as-cran wpor_0.0.7.tar.gz
 For cran, you should also run
 
 ```r
-build_win(package=".") 
-# compiles package on windows via http://win-builder.r-project.org/.
-# emails results to package maintainer email within ~30min
+# Compile package on windows via http://win-builder.r-project.org/
+# These functions email results to package maintainer email within ~30min
+# The functions will each check your email before continuing.
+devtools::check_win_devel()
+devtools::check_win_release()
 ```
