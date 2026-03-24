@@ -449,7 +449,7 @@ assert_shared_data_address <- function(rset) {
   addresses <- rep(NA, nrow(rset))
   for (i in 1:length(rset$id)) {
     dati <- rset$splits[[i]]$data
-    addresses[i] <- pryr::address(dati)
+    addresses[i] <- lobstr::obj_addr(dati)
     if (i == 1) stopifnot(all(dati$.row == 1:nrow(dati)))
     # use rownames isntead of .row?
     # No, rsample uses integers for in_id regardless of the rownames

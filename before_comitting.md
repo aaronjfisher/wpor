@@ -26,7 +26,10 @@ lintr::lint_dir()
 
 ## Scratch
 
-Some other helpful debugging shortcuts, stored here for convenience:
+Some other helpful debugging shortcuts, stored here for convenience. 
+
+These are especially helpful for CRAN submissions.
+
 ```r
 rm(list=ls())
 unloadNamespace('wpor')
@@ -43,5 +46,13 @@ or in terminal
 
 ```
 R CMD build wpor
-R CMD check --as-cran wpor_0.0.6.tar.gz
+R CMD check --as-cran wpor_0.0.7.tar.gz
+```
+
+For cran, you should also run
+
+```r
+build_win(package=".") 
+# compiles package on windows via http://win-builder.r-project.org/.
+# emails results to package maintainer email within ~30min
 ```

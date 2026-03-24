@@ -1,6 +1,6 @@
 Package: wpor
 Title: Weighted Pseudo-Outcome Regression
-Version: 0.0.6
+Version: 0.0.7
 Authors@R:
     person("Aaron", "Fisher", , "afishe27@alumni.jh.edu", role = c("aut", "cre"))
 Author: Aaron Fisher [aut, cre]
@@ -21,11 +21,10 @@ Imports:
   hardhat,
   lifecycle,
   lightgbm,
+  lobstr,
   methods,
-  pryr,
   rsample,
   rlang,
-  rlearner,
   tibble,
   tidyr,
   tune,
@@ -36,6 +35,7 @@ Suggests:
   knitr,
   parsnip,
   ranger,
+  rlearner,
   testthat (>= 3.0.0),
   tidymodels
 Config/testthat/edition: 3

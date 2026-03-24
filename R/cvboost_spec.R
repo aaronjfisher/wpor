@@ -12,6 +12,10 @@ rm_class <- function(obj, class_name) {
 }
 
 #' Define a cvboost model specification
+#'
+#' Note, these specifications were used for comparison in the publication associated
+#' with this packages, but the preferred workflow is to use tidymodels.
+#'
 #' @param formula A formula object specifying the model to be fit.
 #' @param mode A character string specifying the mode
 #' of the model, either "regression" or "classification".
@@ -39,6 +43,9 @@ cvboost_spec <- function(formula, mode, control = NULL, weights_column = NULL) {
 #' @export
 fit.cvboost_spec <- function(object, data, ...) {
   w <- get_weights(object, data)
+  if (!requireNamespace("rlearner")) {
+    stop("The rlearner package is required to fit a cvboost model.")
+  }
   fitted <- do.call(rlearner::cvboost, c(
     list(
       x = get_x(object, data),

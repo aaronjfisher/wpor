@@ -20,5 +20,6 @@ the name of the column in the data frame that contains observation weights.
 the result of model.matrix}
 }
 \description{
-Define a cvboost model specification
+Note, these specifications were used for comparison in the publication associated
+with this packages, but the preferred workflow is to use tidymodels.
 }
