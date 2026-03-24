@@ -13,9 +13,12 @@ rm_class <- function(obj, class_name) {
 
 #' Define a cvboost model specification
 #' @param formula A formula object specifying the model to be fit.
-#' @param mode A character string specifying the mode of the model, either "regression" or "classification".
-#' @param control A list of control parameters to be passed to the cvboost function.
-#' @param weights_column A character string specifying the name of the column in the data frame that contains observation weights.
+#' @param mode A character string specifying the mode
+#' of the model, either "regression" or "classification".
+#' @param control A list of control parameters to be
+#' passed to the cvboost function.
+#' @param weights_column A character string specifying
+#' the name of the column in the data frame that contains observation weights.
 #' the result of model.matrix
 #' @export
 cvboost_spec <- function(formula, mode, control = NULL, weights_column = NULL) {
@@ -62,7 +65,8 @@ fit.cvboost_spec <- function(object, data, ...) {
 
 #' Predict cvboost results on new data
 #' @param object A fitted cvboost_fit object.
-#' @param new_data A data frame containing the new data on which to make predictions.
+#' @param new_data A data frame containing the new data
+#' on which to make predictions.
 #' @param ... Additional arguments passed to stats::predict.
 #' @export
 #' @importFrom stats predict
@@ -75,9 +79,9 @@ predict.cvboost_fit <- function(object, new_data, ...) {
 
 
 #' Define a boosting specification, tuned by cross-validation
-#' 
+#'
 #' Either data or fit_init must be provided.
-#' 
+#'
 #' @param data A data frame containing the data to fit the initial cvboost model on.
 #' @param fit_init An initial cvboost fit object, if already available.
 #' @param ... Additional arguments passed to cvboost_spec.

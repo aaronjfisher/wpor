@@ -1,10 +1,14 @@
 #' Define a lightgbm model specification
-#' @param object For fit.lightgbm_spec, a lightgbm_spec object created by lightgbm_spec().
+#' @param object For fit.lightgbm_spec, a lightgbm_spec
+#' object created by lightgbm_spec().
 #' For predict.lightgbm_fit, a lightgbm_fit object created by fit.lightgbm_spec().
 #' @param formula A formula specifying the outcome and predictors for the model.
-#' @param mode A character string specifying the mode of the model, either "regression" or "classification".
-#' @param params A named list of parameters to be passed to the lightgbm training function.
-#' @param weights_column An optional string specifying the name of a column in the training data frame containing observation weights.
+#' @param mode A character string specifying the mode of
+#' the model, either "regression" or "classification".
+#' @param params A named list of parameters to be passed
+#' to the lightgbm training function.
+#' @param weights_column An optional string specifying the
+#'  name of a column in the training data frame containing observation weights.
 #' @export
 #' @examples
 #' set.seed(0)
@@ -61,7 +65,8 @@ lightgbm_spec <- function(
 #' Fit a lightgbm model based on a specification
 #' @param data a data frame containing the training data.
 #' @param verbose verbosity level for lightgbm training.
-#' @param ... for fit.lightgbm_spec, additional arguments passed to the lightgbm::lgb.train.
+#' @param ... for fit.lightgbm_spec, additional arguments
+#' passed to the lightgbm::lgb.train.
 #' @export
 #' @rdname lightgbm_spec
 fit.lightgbm_spec <- function(object, data, verbose = -1, ...) {

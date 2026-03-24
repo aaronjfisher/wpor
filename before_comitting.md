@@ -19,6 +19,7 @@ stopifnot(no_errors)
 
 Before submitting a more involved pull request (e.g., > 100 lines or > 3 files changed), run a full devtools::check. Also run lint_dir and manually implement the changes.
 ```r
+devtools::check(cran = TRUE)
 lintr::lint_dir()
 ```
 
@@ -36,4 +37,11 @@ devtools::install(build_vignettes = TRUE)
 browseVignettes('wpor')
 help(package='wpor')
 devtools::build()
+```
+
+or in terminal
+
+```
+R CMD build wpor
+R CMD check --as-cran wpor_0.0.6.tar.gz
 ```

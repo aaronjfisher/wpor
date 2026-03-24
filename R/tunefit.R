@@ -2,15 +2,21 @@
 #'
 #' @param trainer a parsnip workflow or model specification that can be tuned.
 #' @param data a dataset to train on
-#' @param grid a data frame of parameter sets to evaluate. If NULL, a grid will be generated.
-#' @param metric a function that takes arguments pred, truth, and weights and 
-#' returns a numeric value to be minimized. If NULL, defaults to metric_neg_log_lik for classification tasks and metric_mse for regression tasks.
+#' @param grid a data frame of parameter sets to evaluate. If NULL,
+#' a grid will be generated.
+#' @param metric a function that takes arguments pred, truth, and weights and
+#' returns a numeric value to be minimized. If NULL, defaults to
+#' metric_neg_log_lik for classification tasks and metric_mse for regression tasks.
 #' @param v number of cv folds to use in resamples; overwritten by resamples, if provided.
 #' @param size number of param sets to evaluate
-#' @param resamples An ‘rset()’ object object used to evaluate wf. Defaults to rsample::vfold_cv(data, v).
+#' @param resamples An ‘rset()’ object object used to evaluate wf.
+#' Defaults to rsample::vfold_cv(data, v).
 #' @param burnin how many folds to examine before discarding
-#' @param alpha significance level for t-tests to discard poorly performing parameter sets. Defaults to 0.05.
-#' @param group if specified, the name of a column in data that contains group identifiers for group-wise cross-validation. If NULL, standard cross-validation is used.
+#' @param alpha significance level for t-tests to discard poorly
+#'  performing parameter sets. Defaults to 0.05.
+#' @param group if specified, the name of a column in data that
+#' contains group identifiers for group-wise cross-validation.
+#' If NULL, standard cross-validation is used.
 #' poorly performing parameter sets. Defaults to length(resamples$splits).
 #' @param seed if specified, temporarily changes the seed to ensure
 #' reproducibility when computing resamples. The original seed of the calling
@@ -93,10 +99,13 @@ tune_params <- function(
   }
 
   if (verbose) {
-    if (burnin == v_updated){
-      printed_folds_string = paste0(v_updated, " folds, and ")
+    if (burnin == v_updated) {
+      printed_folds_string <- paste0(v_updated, " folds, and ")
     } else {
-      printed_folds_string = paste0(burnin, "-", v_updated, " folds (depending on tests after burn-in period), and ")
+      printed_folds_string <- paste0(
+        burnin, "-", v_updated,
+        " folds (depending on tests after burn-in period), and "
+      )
     }
     message(
       "Tuning parameters using ",
@@ -110,7 +119,10 @@ tune_params <- function(
     if (verbose) {
       message(
         "\nFold", i,
-        ifelse(burnin == v_updated, "", paste0("(running ", sum(1 - skip_ind), "/", size, " param sets)")),
+        ifelse(burnin == v_updated, "", paste0(
+          "(running ",
+          sum(1 - skip_ind), "/", size, " param sets)"
+        )),
         ": ",
         appendLF = FALSE
       )
@@ -141,11 +153,19 @@ tune_params <- function(
       if (skip_ind[j]) next
       perf_j <- performance[1:i, j]
       if (i >= burnin & min(stats::var(perf_j), stats::var(perf_best)) > 10^-5) {
-        skip_ind[j] <- stats::t.test(perf_best, perf_j, alternative = "less")$p.value < alpha
+        skip_ind[j] <- stats::t.test(
+          perf_best, perf_j,
+          alternative = "less"
+        )$p.value < alpha
       }
     }
     if (sum(!skip_ind) == 1) {
-      if (verbose & i < v_updated) message("\nStopping Early; 1 candidate left.", appendLF = FALSE)
+      if (verbose & i < v_updated) {
+        message(
+          "\nStopping Early; 1 candidate left.",
+          appendLF = FALSE
+        )
+      }
       break
     }
   }
@@ -241,7 +261,7 @@ metric_neg_log_lik <- function(
 #'
 #' ## Example using tune_params explicitly
 #' # setting size artificially small for example
-#' tuned_wf <- tune_params(wf, data = training$data, size = 2, seed = 0) 
+#' tuned_wf <- tune_params(wf, data = training$data, size = 2, seed = 0)
 #' fitted1 <- fit(tuned_wf, training$data)
 #' pred1 <- predict(fitted1, training$data, "prob")
 #'
@@ -254,7 +274,9 @@ metric_neg_log_lik <- function(
 as.tunefit <- function(trainer, ...) {
   dots <- list(...)
   if ("data" %in% names(dots)) {
-    warning("`data` should not be passed as an argument to `as.tunefit`. Rather, the training data should be specified at the time of fitting, via `fit.tunefit`")
+    warning("`data` should not be passed as an argument to `as.tunefit`.
+    Rather, the training data should be specified at the
+    time of fitting, via `fit.tunefit`")
   }
   list(trainer = trainer, tune_args = dots) %>%
     add_class("tunefit")

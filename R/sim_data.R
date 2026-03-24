@@ -1,9 +1,11 @@
 #' Simulate data based on Nie & Wager, 2018.
 #' See https://github.com/xnie/rlearner/blob/6806396960e672214e2ef36e16c76bbb58ef9114/experiments_for_paper/run_simu.R
-#' @param setup Character string indicating the simulation setup to use. Options are "A", "B", "C", "D", "E", "F", or "G".
+#' @param setup Character string indicating the simulation setup to use.
+#' Options are "A", "B", "C", "D", "E", "F", or "G".
 #' @param n Integer indicating the number of observations to simulate.
 #' @param p Integer indicating the number of covariates to simulate.
-#' @param sigma Numeric indicating the standard deviation of the noise term to add to the outcome.
+#' @param sigma Numeric indicating the standard deviation of the
+#' noise term to add to the outcome.
 #' @importFrom dplyr %>%
 #' @importFrom stats rbinom runif rnorm
 #' @export
@@ -13,7 +15,8 @@ sim_data <- function(setup, n, p, sigma) {
     get.params <- function() {
       stopifnot(p >= 5)
       X <- matrix(runif(n * p, min = 0, max = 1), n, p)
-      b <- sin(pi * X[, 1] * X[, 2]) + 2 * (X[, 3] - 0.5)^2 + X[, 4] + 0.5 * X[, 5]
+      b <- sin(pi * X[, 1] * X[, 2]) + 2 * (X[, 3] - 0.5)^2 + X[, 4] +
+        0.5 * X[, 5]
       eta <- 0.1
       e <- pmax(eta, pmin(sin(pi * X[, 1] * X[, 2]), 1 - eta))
       tau <- (X[, 1] + X[, 2]) / 2

@@ -43,13 +43,17 @@ pseudo_cov(
 
 \item{treatment}{The observed treatment variable (binary).}
 
-\item{.pred_outcome_1_single, .pred_outcome_0_single}{Predicted potential outcomes under treatment and control, from single/joint model.}
+\item{.pred_outcome_1_single, .pred_outcome_0_single}{Predicted
+potential outcomes under treatment and control, from single/joint model.}
 
-\item{.pred_treatment, .pred_control}{Predicted probabilities of treatment and control assignment.}
+\item{.pred_treatment, .pred_control}{Predicted probabilities
+of treatment and control assignment.}
 
-\item{.pred_outcome_1_separate, .pred_outcome_0_separate}{Predicted potential outcomes under treatment and control, from separate models.}
+\item{.pred_outcome_1_separate, .pred_outcome_0_separate}{Predicted potential outcomes under treatment and control,
+from separate models.}
 
-\item{.pred_outcome_marginal}{Predicted marginal outcome, marginalizing over treatment assignment.}
+\item{.pred_outcome_marginal}{Predicted marginal outcome,
+marginalizing over treatment assignment.}
 }
 \description{
 Pseudo outcome functions

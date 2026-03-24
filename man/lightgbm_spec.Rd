@@ -15,11 +15,14 @@ lightgbm_spec(formula, mode, params = list(), weights_column = NULL)
 \arguments{
 \item{formula}{A formula specifying the outcome and predictors for the model.}
 
-\item{mode}{A character string specifying the mode of the model, either "regression" or "classification".}
+\item{mode}{A character string specifying the mode of
+the model, either "regression" or "classification".}
 
-\item{params}{A named list of parameters to be passed to the lightgbm training function.}
+\item{params}{A named list of parameters to be passed
+to the lightgbm training function.}
 
-\item{weights_column}{An optional string specifying the name of a column in the training data frame containing observation weights.}
+\item{weights_column}{An optional string specifying the
+name of a column in the training data frame containing observation weights.}
 
 \item{object}{a fitted lightgbm_fit object.}
 

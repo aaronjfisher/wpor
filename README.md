@@ -1,6 +1,6 @@
 # wpor: a package for weighted pseudo-outcome regression
 
-This package implements the meta-learner methods discussed in [Fisher (2023)](https://arxiv.org/abs/2307.09700), including 
+This package implements the meta-learner methods discussed in [Fisher (2024)](https://proceedings.mlr.press/v235/fisher24a.html), including
 
 * Inverse Variance Weighted Doubly Robust Learning,
 * Standard Doubly Robust (DR) Learning,

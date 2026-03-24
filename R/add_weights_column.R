@@ -2,7 +2,7 @@
 #' @param object A model specification or workflow object.
 #' @param column A character string indicating the name of the column to use for weights.
 #' @param ... Placeholder for generic arguments.
-#' 
+#'
 #' @export
 #' @examples
 #' training <- sim_data(setup = "A", n = 700, p = 6, sigma = 1)

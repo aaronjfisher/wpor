@@ -115,19 +115,25 @@ check_wf <- function(
     rhs <- all.vars(wf$pre$actions$formula$formula)[-1]
     rhs_lacks <- unique(rhs_lacks, lhs_is) # avoid circular formulas
     if (any(rhs_lacks %in% rhs)) {
-      stop("Incorrect workflow specification. Right-hand side omit: ", paste(rhs_lacks, collapse = ", "))
+      stop(
+        "Incorrect workflow specification. Right-hand side omit: ",
+        paste(rhs_lacks, collapse = ", ")
+      )
     }
     if (any(!rhs_has %in% rhs)) {
-      stop("Incorrect workflow specification. Right-hand side must have: ", paste(rhs_has, collapse = ", "))
+      stop(
+        "Incorrect workflow specification. Right-hand side must have: ",
+        paste(rhs_has, collapse = ", ")
+      )
     }
   }
 }
 
 #' Apply weighted pseudo-outcome regression
 #' @param data a data.frame or tibble containing columns `treatment` and `outcome`.
-#' @param outcome_1_separate_wf,outcome_0_separate_wf,outcome_single_wf,outcome_marginal_wf,treatment_wf tidymodel workflows
-#' for each modeling step. These should have formulas
-#'  with `outcome` or `treatment` on the left-hand side.
+#' @param outcome_1_separate_wf,outcome_0_separate_wf,outcome_single_wf,outcome_marginal_wf,treatment_wf
+#' tidymodel workflows for each modeling step. These should have formulas
+#' with `outcome` or `treatment` on the left-hand side.
 #' The formula for `outcome_single_wf` should include
 #' `treatment` on the right-hand side, but no other formulas
 #' should include treatment as a covariate.
@@ -135,7 +141,16 @@ check_wf <- function(
 #' @param v number of folds, passed to vfold_cv
 #' @param cf_order either 2, 3, or 4.
 #' @param verbose whether to print progress.
-#' @returns a tibble of nuisance predictions. If cf_order is >2, there will be more than 1 prediction per row of `data`. The tibble contains: `.row`, the row index of `data`; `.fold_id`, the fold used to train the predictions; `.pred_treatment`, the predicted probability of treatment; `.pred_control`, the predicted probability of control (equal to 1-.pred_treatment if cf_order <= 3); `.pred_outcome_0_separate` the predicted outcome under treatment == 0, `.pred_outcome_1_separate` the predicted outcome under treatment == 1; `.pred_outcome_marginal` the predicted outcome under the observed treatment, i.e., marginalizing over treatment.
+#' @returns a tibble of nuisance predictions. If cf_order is >2, there will
+#'  be more than 1 prediction per row of `data`. The tibble contains: `.row`,
+#'  the row index of `data`; `.fold_id`, the fold used to train the
+#' predictions; `.pred_treatment`, the predicted probability of
+#' treatment; `.pred_control`, the predicted probability of
+#' control (equal to 1-.pred_treatment if cf_order <= 3);
+#' `.pred_outcome_0_separate` the predicted outcome under treatment == 0,
+#' `.pred_outcome_1_separate` the predicted outcome under treatment == 1;
+#' `.pred_outcome_marginal` the predicted outcome under the observed
+#' treatment, i.e., marginalizing over treatment.
 #' @export
 #' @importFrom dplyr %>% mutate select rename arrange filter join_by left_join
 #' @importFrom rlang .data
@@ -278,7 +293,11 @@ crossfit_nuisance <- function(
     pred_df2$.pred <- lapply(pred_df$.pred, \(p){
       stopifnot(length(p$.fold_id) == 3)
       eg <- expand.grid(1:3, 1:3, 1:3) %>%
-        filter(.data$Var1 != .data$Var2, .data$Var1 != .data$Var3, .data$Var2 != .data$Var3)
+        filter(
+          .data$Var1 != .data$Var2,
+          .data$Var1 != .data$Var3,
+          .data$Var2 != .data$Var3
+        )
       apply(eg, 1, \(inds)
       data.frame(
         .fold_id = gsub("Fold", "", paste(p$.fold_id[inds], collapse = "x")),
@@ -346,7 +365,10 @@ fit_wpor <- function(data,
       warning('Setting effect_wf$tune_args$group <- ".row"')
       effect_wf$tune_args$group <- ".row"
     } else {
-      if (effect_wf$tune_args$group != ".row") stop('effect_wf$tune_args$group should be ".row" to avoid having the same individual in multiple splits.')
+      if (effect_wf$tune_args$group != ".row") {
+        stop('effect_wf$tune_args$group should be ".row" to avoid
+        having the same individual in multiple splits.')
+      }
     }
   }
 
@@ -385,7 +407,11 @@ fit_wpor <- function(data,
     by = join_by(.row)
   ) %>%
     select(-all_of(c("outcome", "treatment")))
-  check_wf(effect_wf, dat_effect, lhs_is = "pseudo", rhs_lacks = c("outcome", "treatment"))
+  check_wf(
+    effect_wf, dat_effect,
+    lhs_is = "pseudo",
+    rhs_lacks = c("outcome", "treatment")
+  )
 
   fitted <- effect_wf %>%
     add_weights_column(".weights") %>%

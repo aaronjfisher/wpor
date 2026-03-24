@@ -5,7 +5,8 @@
 \alias{get_y}
 \alias{get_x.lightgbm_spec}
 \alias{get_y.lightgbm_spec}
-\title{Get the design matrix and response vector from a model specification or workflow and data}
+\title{Get the design matrix and response vector from a
+model specification or workflow and data}
 \usage{
 get_x(object, data, ...)
 
@@ -18,10 +19,12 @@ get_y(object, data, ...)
 \arguments{
 \item{object}{A model specification or workflow object.}
 
-\item{data}{A data frame containing the data to extract the design matrix and response vector from.}
+\item{data}{A data frame containing the data to
+extract the design matrix and response vector from.}
 
 \item{...}{Placeholder for generic arguments.}
 }
 \description{
-Get the design matrix and response vector from a model specification or workflow and data
+Get the design matrix and response vector from a
+model specification or workflow and data
 }

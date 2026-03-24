@@ -24,5 +24,3 @@ update_params.workflow <- function(object, new_params, ...) {
   }
   tune::finalize_workflow(object, new_params)
 }
-
-

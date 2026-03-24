@@ -1,6 +1,7 @@
 #' Generate a random grid of tuning parameters
 #' @param size number of rows for the grid.
-#' @param ... named arguments where each argument is a vector of possible values to use for generating
+#' @param ... named arguments where each argument is a vector
+#' of possible values to use for generating
 #' for each dimension.
 #' @returns a data.frame with rows that can be used with update.params(as.list(row)).
 #' @export
@@ -35,7 +36,8 @@ lightgbm_grid <- function(size, marginal_len = 20, num_threads = 1) {
 
 #' Generate a sequence that is evenly spaced on the log scale
 #' log_seq is helpful function for creating random grids
-#' @param from,to logs of these values are passed to seq to create a sequence that is evenly spaced on the log scale
+#' @param from,to logs of these values are passed to seq
+#' to create a sequence that is evenly spaced on the log scale
 #' @param length the length of the sequence to generate, passed to seq as length.out.
 #' @export
 log_seq <- function(from, to, length) {

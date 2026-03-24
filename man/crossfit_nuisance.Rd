@@ -33,8 +33,7 @@ fit_wpor(
 \arguments{
 \item{data}{a data.frame or tibble containing columns \code{treatment} and \code{outcome}.}
 
-\item{outcome_1_separate_wf, outcome_0_separate_wf, outcome_single_wf, outcome_marginal_wf, treatment_wf}{tidymodel workflows
-for each modeling step. These should have formulas
+\item{outcome_1_separate_wf, outcome_0_separate_wf, outcome_single_wf, outcome_marginal_wf, treatment_wf}{tidymodel workflows for each modeling step. These should have formulas
 with \code{outcome} or \code{treatment} on the left-hand side.
 The formula for \code{outcome_single_wf} should include
 \code{treatment} on the right-hand side, but no other formulas
@@ -64,7 +63,16 @@ a data column labeled "pseudo".}
 \item{standardize_weights}{whether to standardize the weights to have mean 1.}
 }
 \value{
-a tibble of nuisance predictions. If cf_order is >2, there will be more than 1 prediction per row of \code{data}. The tibble contains: \code{.row}, the row index of \code{data}; \code{.fold_id}, the fold used to train the predictions; \code{.pred_treatment}, the predicted probability of treatment; \code{.pred_control}, the predicted probability of control (equal to 1-.pred_treatment if cf_order <= 3); \code{.pred_outcome_0_separate} the predicted outcome under treatment == 0, \code{.pred_outcome_1_separate} the predicted outcome under treatment == 1; \code{.pred_outcome_marginal} the predicted outcome under the observed treatment, i.e., marginalizing over treatment.
+a tibble of nuisance predictions. If cf_order is >2, there will
+be more than 1 prediction per row of \code{data}. The tibble contains: \code{.row},
+the row index of \code{data}; \code{.fold_id}, the fold used to train the
+predictions; \code{.pred_treatment}, the predicted probability of
+treatment; \code{.pred_control}, the predicted probability of
+control (equal to 1-.pred_treatment if cf_order <= 3);
+\code{.pred_outcome_0_separate} the predicted outcome under treatment == 0,
+\code{.pred_outcome_1_separate} the predicted outcome under treatment == 1;
+\code{.pred_outcome_marginal} the predicted outcome under the observed
+treatment, i.e., marginalizing over treatment.
 
 a fitted model; the output of \code{workflows:::fit.workflow}
 }

@@ -26,7 +26,8 @@ form <- formula(paste("treatment ~", rhs))
 
 
 
-test_that("weights are used in tune_params for lasso, but not in standard tune::tune_grid", {
+test_that("weights are used in tune_params for lasso, but
+not in standard tune::tune_grid", {
   wf_unweighted <- workflow() %>%
     add_model(linear_reg(
       penalty = tune(),
@@ -41,11 +42,18 @@ test_that("weights are used in tune_params for lasso, but not in standard tune::
 
   rs <- rsample::vfold_cv(train, v = 2)
   my_tuned_active <- tune_params(wf_active, data = train, resamples = rs, size = 10)
-  my_tuned_nonactive <- tune_params(wf_nonactive, data = train, resamples = rs, size = 10)
+  my_tuned_nonactive <- tune_params(
+    wf_nonactive,
+    data = train, resamples = rs, size = 10
+  )
 
-  my_active_penalty <- workflows::extract_spec_parsnip(my_tuned_active)$args$penalty %>%
+  my_active_penalty <- workflows::extract_spec_parsnip(
+    my_tuned_active
+  )$args$penalty %>%
     rlang::eval_tidy(expr = .)
-  my_nonactive_penalty <- workflows::extract_spec_parsnip(my_tuned_nonactive)$args$penalty %>%
+  my_nonactive_penalty <- workflows::extract_spec_parsnip(
+    my_tuned_nonactive
+  )$args$penalty %>%
     rlang::eval_tidy(expr = .)
 
   expect_true(my_active_penalty * 100 < my_nonactive_penalty)

@@ -1,9 +1,11 @@
 Package: wpor
-Title: Weighted pseudo-outcome regression
+Title: Weighted Pseudo-Outcome Regression
 Version: 0.0.6
-Authors@R: 
+Authors@R:
     person("Aaron", "Fisher", , "afishe27@alumni.jh.edu", role = c("aut", "cre"))
-Description: This package implements the weighted pseudo-outcome regression methods discussed in https://arxiv.org/abs/2307.09700. For nuisance training methods, users can either input workflows from the tidymodels set of packages or define their own training algorithms. 
+Author: Aaron Fisher [aut, cre]
+Maintainer: Aaron Fisher <afishe27@alumni.jh.edu>
+Description: Implements the weighted pseudo-outcome regression methods discussed in <https://proceedings.mlr.press/v235/fisher24a.html>. For nuisance training methods, users can either input workflows from the tidymodels set of packages or define their own training algorithms.
 License: Apache License (>= 2)
 Encoding: UTF-8
 LazyData: true

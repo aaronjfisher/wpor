@@ -31,16 +31,20 @@ as.tunefit(trainer, ...)
 
 \item{data}{a dataset to train on}
 
-\item{grid}{a data frame of parameter sets to evaluate. If NULL, a grid will be generated.}
+\item{grid}{a data frame of parameter sets to evaluate. If NULL,
+a grid will be generated.}
 
 \item{metric}{a function that takes arguments pred, truth, and weights and
-returns a numeric value to be minimized. If NULL, defaults to metric_neg_log_lik for classification tasks and metric_mse for regression tasks.}
+returns a numeric value to be minimized. If NULL, defaults to
+metric_neg_log_lik for classification tasks and metric_mse for regression tasks.}
 
 \item{v}{number of cv folds to use in resamples; overwritten by resamples, if provided.}
 
-\item{resamples}{An ‘rset()’ object object used to evaluate wf. Defaults to rsample::vfold_cv(data, v).}
+\item{resamples}{An ‘rset()’ object object used to evaluate wf.
+Defaults to rsample::vfold_cv(data, v).}
 
-\item{alpha}{significance level for t-tests to discard poorly performing parameter sets. Defaults to 0.05.}
+\item{alpha}{significance level for t-tests to discard poorly
+performing parameter sets. Defaults to 0.05.}
 
 \item{burnin}{how many folds to examine before discarding}
 
@@ -48,7 +52,9 @@ returns a numeric value to be minimized. If NULL, defaults to metric_neg_log_lik
 reproducibility when computing resamples. The original seed of the calling
 environment is restored before the tune_params function completes.}
 
-\item{group}{if specified, the name of a column in data that contains group identifiers for group-wise cross-validation. If NULL, standard cross-validation is used.
+\item{group}{if specified, the name of a column in data that
+contains group identifiers for group-wise cross-validation.
+If NULL, standard cross-validation is used.
 poorly performing parameter sets. Defaults to length(resamples$splits).}
 
 \item{verbose}{whether to print progress messages to the console.}
@@ -113,7 +119,7 @@ if (FALSE) {
 
 ## Example using tune_params explicitly
 # setting size artificially small for example
-tuned_wf <- tune_params(wf, data = training$data, size = 2, seed = 0) 
+tuned_wf <- tune_params(wf, data = training$data, size = 2, seed = 0)
 fitted1 <- fit(tuned_wf, training$data)
 pred1 <- predict(fitted1, training$data, "prob")
 

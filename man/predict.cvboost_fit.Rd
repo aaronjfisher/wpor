@@ -9,7 +9,8 @@
 \arguments{
 \item{object}{A fitted cvboost_fit object.}
 
-\item{new_data}{A data frame containing the new data on which to make predictions.}
+\item{new_data}{A data frame containing the new data
+on which to make predictions.}
 
 \item{...}{Additional arguments passed to stats::predict.}
 }

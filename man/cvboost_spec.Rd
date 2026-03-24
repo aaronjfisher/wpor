@@ -9,11 +9,14 @@ cvboost_spec(formula, mode, control = NULL, weights_column = NULL)
 \arguments{
 \item{formula}{A formula object specifying the model to be fit.}
 
-\item{mode}{A character string specifying the mode of the model, either "regression" or "classification".}
+\item{mode}{A character string specifying the mode
+of the model, either "regression" or "classification".}
 
-\item{control}{A list of control parameters to be passed to the cvboost function.}
+\item{control}{A list of control parameters to be
+passed to the cvboost function.}
 
-\item{weights_column}{A character string specifying the name of the column in the data frame that contains observation weights.
+\item{weights_column}{A character string specifying
+the name of the column in the data frame that contains observation weights.
 the result of model.matrix}
 }
 \description{

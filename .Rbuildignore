@@ -2,3 +2,8 @@
 ^LICENSE$
 ^before_comitting\.md$
 ^experiments-for-paper$
+^.gitignore$
+^.DS_store$
+^doc$
+^Meta$
+^.lintr$

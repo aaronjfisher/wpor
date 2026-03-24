@@ -1,6 +1,8 @@
-#' Get the design matrix and response vector from a model specification or workflow and data
+#' Get the design matrix and response vector from a
+#' model specification or workflow and data
 #' @param object A model specification or workflow object.
-#' @param data A data frame containing the data to extract the design matrix and response vector from.
+#' @param data A data frame containing the data to
+#' extract the design matrix and response vector from.
 #' @param ... Placeholder for generic arguments.
 #' @export
 get_x <- function(object, data, ...) {

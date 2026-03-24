@@ -12,7 +12,8 @@ lightgbm_grid(size, marginal_len = 20, num_threads = 1)
 \arguments{
 \item{size}{number of rows for the grid.}
 
-\item{...}{named arguments where each argument is a vector of possible values to use for generating
+\item{...}{named arguments where each argument is a vector
+of possible values to use for generating
 for each dimension.}
 
 \item{marginal_len}{the number of unique parameter values to draw from}
