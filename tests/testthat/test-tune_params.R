@@ -28,6 +28,7 @@ form <- formula(paste("treatment ~", rhs))
 
 test_that("weights are used in tune_params for lasso, but
 not in standard tune::tune_grid", {
+  skip_if_not_installed("glmnet")
   wf_unweighted <- workflow() %>%
     add_model(linear_reg(
       penalty = tune(),

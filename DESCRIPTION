@@ -34,6 +34,7 @@ VignetteBuilder: knitr
 Suggests: 
   knitr,
   parsnip,
+  glmnet,
   ranger,
   rlearner,
   testthat (>= 3.0.0),
