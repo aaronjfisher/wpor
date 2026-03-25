@@ -4,7 +4,11 @@
 \alias{get_x}
 \alias{get_y}
 \alias{get_x.lightgbm_spec}
+\alias{get_x.tuned_boost_spec}
+\alias{get_x.cvboost_spec}
 \alias{get_y.lightgbm_spec}
+\alias{get_y.tuned_boost_spec}
+\alias{get_y.cvboost_spec}
 \title{Get the design matrix and response vector from a
 model specification or workflow and data}
 \usage{
@@ -14,7 +18,15 @@ get_y(object, data, ...)
 
 \method{get_x}{lightgbm_spec}(object, data, ...)
 
+\method{get_x}{tuned_boost_spec}(object, data, ...)
+
+\method{get_x}{cvboost_spec}(object, data, ...)
+
 \method{get_y}{lightgbm_spec}(object, data, ...)
+
+\method{get_y}{tuned_boost_spec}(object, data, ...)
+
+\method{get_y}{cvboost_spec}(object, data, ...)
 }
 \arguments{
 \item{object}{A model specification or workflow object.}

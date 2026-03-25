@@ -15,6 +15,7 @@ system.time({
 	no_errors <- TRUE
 })
 stopifnot(no_errors)
+warnings()
 ```
 
 Before submitting a more involved pull request (e.g., > 100 lines or > 3 files changed), run a full devtools::check. Also run lint_dir and manually implement the changes.
