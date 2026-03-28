@@ -1,5 +1,6 @@
 library("dplyr")
 library("rslurm")
+source("cvboost_spec.R")
 source("wpor_sim_fun.R")
 
 size = 25

@@ -59,4 +59,6 @@ For cran, you should also run
 # and must be run interactively.
 devtools::check_win_devel()
 devtools::check_win_release()
+devtools::check_mac_devel()
+devtools::check_mac_release()
 ```

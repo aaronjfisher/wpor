@@ -30,13 +30,6 @@ add_weights_column.lightgbm_spec <- function(object, column, ...) {
 
 #' @export
 #' @rdname add_weights_column
-add_weights_column.cvboost_spec <- function(object, column, ...) {
-  stopifnot(is.character(column))
-  object$weights_column <- column
-  object
-}
-#' @export
-#' @rdname add_weights_column
 add_weights_column.workflow <- function(object, column, ...) {
   stopifnot(is.character(column))
   workflows::add_case_weights(object, !!as.symbol(column))
@@ -63,14 +56,6 @@ get_weights_column <- function(object, ...) {
 
 #' @export
 get_weights_column.lightgbm_spec <- function(object, ...) {
-  object$weights_column
-}
-#' @export
-get_weights_column.tuned_boost_spec <- function(object, ...) {
-  object$weights_column
-}
-#' @export
-get_weights_column.cvboost_spec <- function(object, ...) {
   object$weights_column
 }
 #' @export

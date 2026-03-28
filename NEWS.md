@@ -1,6 +1,14 @@
 NEWS.md
 =====
 
+### 0.0.7
+
+* (**Breaking**) cvboost_spec.R removed from package and placed in separate script under `experiments-for-paper`, in preparation for CRAN submission. These functions depend on the `rlearner` installation package which is not yet available on CRAN, and were primarily intended for simulations supporting the publication associated with this package.
+* (**Breaking**) Minimum R version requirement increased from 3.5.0 to 4.1.0.
+* Replaced deprecated pryr with lobstr in Imports.
+* Fixed S3 method exports for get_x and get_y methods
+* Minor documentation changes in response to CRAN submission checks.
+
 ### 0.0.6
 
 * (**Breaking**) Replace `getOption("verbose")` with `getOption("wpor.verbose")` to avoid overlap with other packages. Users should now set `options(wpor.verbose = TRUE)` to enable verbose output.

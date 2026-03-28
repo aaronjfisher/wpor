@@ -3,7 +3,6 @@
 \name{add_weights_column}
 \alias{add_weights_column}
 \alias{add_weights_column.lightgbm_spec}
-\alias{add_weights_column.cvboost_spec}
 \alias{add_weights_column.workflow}
 \alias{add_weights_column.tunefit}
 \title{Specify a column name to use for weights}
@@ -11,8 +10,6 @@
 add_weights_column(object, column, ...)
 
 \method{add_weights_column}{lightgbm_spec}(object, column, ...)
-
-\method{add_weights_column}{cvboost_spec}(object, column, ...)
 
 \method{add_weights_column}{workflow}(object, column, ...)
 

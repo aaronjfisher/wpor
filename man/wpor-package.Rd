@@ -6,7 +6,7 @@
 \alias{wpor-package}
 \title{wpor: Weighted Pseudo-Outcome Regression}
 \description{
-Implements the weighted pseudo-outcome regression methods discussed in \url{https://proceedings.mlr.press/v235/fisher24a.html}. For nuisance training methods, users can either input workflows from the tidymodels set of packages or define their own training algorithms.
+Implements the weighted pseudo-outcome regression methods discussed in \url{https://proceedings.mlr.press/v235/fisher24a.html}. For nuisance training methods, users can either input workflows from the 'tidymodels' set of packages or define their own training algorithms.
 }
 \author{
 \strong{Maintainer}: Aaron Fisher \email{afishe27@alumni.jh.edu}
