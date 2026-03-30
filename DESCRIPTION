@@ -28,8 +28,7 @@ Imports:
   tibble,
   tidyr,
   tune,
-  workflows,
-  xgboost
+  workflows
 VignetteBuilder: knitr
 Suggests: 
   knitr,
@@ -37,5 +36,6 @@ Suggests:
   glmnet,
   ranger,
   testthat (>= 3.0.0),
-  tidymodels
+  tidymodels,
+  xgboost
 Config/testthat/edition: 3
