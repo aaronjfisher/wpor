@@ -1,3 +1,16 @@
+#' @importFrom generics fit
+#' @export
+generics::fit
+
+add_class <- function(obj, class_name) {
+  class(obj) <- c(class_name, class(obj))
+  return(obj)
+}
+rm_class <- function(obj, class_name) {
+  class(obj) <- setdiff(class(obj), class_name)
+  return(obj)
+}
+
 #' Define a lightgbm model specification
 #' @param object For fit.lightgbm_spec, a lightgbm_spec
 #' object created by lightgbm_spec().

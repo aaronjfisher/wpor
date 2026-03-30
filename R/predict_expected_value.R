@@ -17,7 +17,7 @@ predict_expected_value <- function(object, ...) {
 predict_expected_value.default <- function(object, ...) {
   pred <- predict(object, ...)
   if (all(pred %in% 0:1)) {
-    stop("Invalid predict_expected_value.default method; all predictions are 0 or 1 exactly")
+    warning("Possibly invalid predict_expected_value.default method; all predictions are 0 or 1 exactly")
   }
   pred
 }

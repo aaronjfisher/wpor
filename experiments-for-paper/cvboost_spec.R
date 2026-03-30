@@ -42,7 +42,7 @@ cvboost_spec <- function(formula, mode, control = NULL, weights_column = NULL) {
 #' @param ... Additional arguments passed to rlearner::cvboost.
 #' @export
 fit.cvboost_spec <- function(object, data, ...) {
-  w <- get_weights(object, data)
+  w <- wpor::get_weights(object, data)
   if (!requireNamespace("rlearner")) {
     stop("The rlearner package is required to fit a cvboost model.")
   }
@@ -113,7 +113,7 @@ tuned_boost_spec <- function(data = NULL, fit_init = NULL, ...) {
 #' @param data A data frame containing the data to fit the model on.
 #' @param ... Additional arguments passed to xgboost::xgb.train.
 fit.tuned_boost_spec <- function(object, data, ...) {
-  w <- get_weights(object, data)
+  w <- wpor::get_weights(object, data)
   DMatrix <- xgboost::xgb.DMatrix(
     data = get_x(object, data),
     label = get_y(object, data),
