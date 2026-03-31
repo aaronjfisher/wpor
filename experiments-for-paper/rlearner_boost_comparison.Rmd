@@ -19,6 +19,7 @@ knitr::opts_chunk$set(
 library("wpor")
 library("dplyr")
 library("tidymodels")
+source("cvboost_spec.R")
 
 set.seed(456)
 p <- 6
